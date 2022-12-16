@@ -10,19 +10,16 @@ from inelsmqtt.const import (
     # Inels types
     RFSC_61,
     SA3_01B,
-    DA3_22M,
-    GTR3_50,
-    GSB3_90SX,
 )
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_TEMPERATURE, Platform
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_class import InelsBaseEntity
-from .const import DEVICES, DOMAIN, ICON_SWITCH, LOGGER
+from .const import DEVICES, DOMAIN, ICON_SWITCH
 
 
 async def async_setup_entry(
@@ -52,28 +49,16 @@ class InelsSwitch(InelsBaseEntity, SwitchEntity):
         """Initialize a switch."""
         super().__init__(device=device)
 
-        self._is_on = False  # TODO get a more permanent solution
-
-        # self._state_attrs = None
-
-        # if isinstance(device.state, bool) is False:
-        #     if hasattr(device.state, "on"):
-        #         self._state_attrs = {
-        #             ATTR_TEMPERATURE: device.state.temperature,
-        #             "on": device.state.on,
-        #         }
+    @property
+    def available(self) -> bool:
+        return super().available and not self._device.state.relay_overflow
 
     @property
     def is_on(self) -> bool:
         """Return true if switch is on."""
-        # if isinstance(self._device.state, bool) is False:
-        #     if hasattr(self._device.state, "on"):
-        #         return self._device.state.on
 
-        return self._is_on
-
-        # ha_val = self._device.get_value().ha_value
-        # return ha_val == True
+        state = self._device.state
+        return state.on
 
     @property
     def icon(self) -> str | None:

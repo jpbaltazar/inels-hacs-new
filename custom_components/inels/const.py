@@ -29,6 +29,10 @@ ICON_BUTTON = "mdi:button-pointer"
 ICON_LIGHT_IN = "mdi:brightness-4"
 ICON_HUMIDITY = "mdi:water-percent"
 ICON_DEW_POINT = "mdi:tailwind"
+ICON_PLUS = "mdi:plus"
+ICON_MINUS = "mdi:minus"
+ICON_ALERT = "mdi:alert"
+ICON_PROXIMITY = "mdi:contactless-payment"
 
 ICON_WATER_HEATER_DICT = {
     "on": "mdi:valve-open",

@@ -29,7 +29,7 @@ class InelsBaseEntity(Entity):
         """Add subscription of the data listenere."""
         self.async_on_remove(
             self._device.mqtt.subscribe_listener(
-                self._device.state_topic, self._callback
+                self._device.state_topic, self._attr_unique_id, self._callback
             )
         )
 
