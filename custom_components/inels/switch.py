@@ -61,7 +61,6 @@ class InelsSwitch(InelsBaseEntity, SwitchEntity):
         """Return true if switch is on."""
 
         state = self._device.state
-        LOGGER.info(f"{self._device.inels_type} - {self._device.state.on}")
         return state.on
 
     @property
