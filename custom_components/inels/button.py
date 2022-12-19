@@ -43,8 +43,8 @@ async def async_setup_entry(
 
     for device in device_list:
         if (
-            device.inels_type == GTR3_50
-            or device.inels_type == DA3_22M
+            device.inels_type is GTR3_50
+            or device.inels_type is DA3_22M
             or device.inels_type is GSB3_90SX
         ):
             val = device.get_value()
