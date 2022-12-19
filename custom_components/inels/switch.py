@@ -19,7 +19,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_class import InelsBaseEntity
-from .const import DEVICES, DOMAIN, ICON_SWITCH
+from .const import DEVICES, DOMAIN, ICON_SWITCH, LOGGER
 
 
 async def async_setup_entry(
@@ -61,6 +61,7 @@ class InelsSwitch(InelsBaseEntity, SwitchEntity):
         """Return true if switch is on."""
 
         state = self._device.state
+        LOGGER.info(f"{self._device.inels_type} - {self._device.state.on}")
         return state.on
 
     @property
