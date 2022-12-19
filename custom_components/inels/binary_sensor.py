@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from inelsmqtt.devices import Device
-from inelsmqtt.const import GSB3_90SX, DA3_22M
+from inelsmqtt.const import GSB3_90SX, DA3_22M, GTR3_50
 
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
@@ -36,7 +36,7 @@ class InelsBinarySensorEntityDescription(
     index: int = None
 
 
-supported = [GSB3_90SX, DA3_22M]
+supported = [GSB3_90SX, DA3_22M, GTR3_50]
 
 
 async def async_setup_entry(
@@ -119,10 +119,7 @@ class InelsBinarySensor(InelsBaseEntity, BinarySensorEntity):
                 f"{self._attr_unique_id}-{self.entity_description.var}"
             )
 
-        if self.entity_description.array:
-            self._attr_name = f"{self._attr_name}-{self.entity_description.name}-{self.entity_description.index}"
-        else:
-            self._attr_name = f"{self._attr_name}-{self.entity_description.name}"
+        self._attr_name = f"{self._attr_name}-{self.entity_description.name}"
 
     # def _callback(self, new_value: Any) -> None:
     #    """Refresh data for device"""

@@ -15,6 +15,7 @@ from inelsmqtt.const import (
     SA3_01B,
     DA3_22M,
     GTR3_50,
+    GSB3_90SX,
 )
 from inelsmqtt.devices import Device
 
@@ -317,7 +318,16 @@ async def async_setup_entry(
                 descriptions = SENSOR_DESCRIPTION_TEMPERATURE_GENERIC
                 for description in descriptions:
                     entities.append(InelsSensor(device, description=description))
-
+        elif device.device_type == Platform.BUTTON:
+            if device.inels_type == GSB3_90SX:
+                descriptions = SENSOR_DESCRIPTION_MULTISENSOR
+                for description in descriptions:
+                    entities.append(
+                        InelsSensor(
+                            device,
+                            description=description,
+                        )
+                    )
     async_add_entities(entities, True)
 
 

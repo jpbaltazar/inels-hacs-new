@@ -77,24 +77,32 @@ class InelsSwitch(InelsBaseEntity, SwitchEntity):
         if not self._device.is_available:
             return None
 
-        await self.hass.async_add_executor_job(self._device.set_ha_value, False)
-        self._is_on = False
+        ha_val = self._device.get_value().ha_value
+        ha_val.on = False
+        await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
+
+        # await self.hass.async_add_executor_job(self._device.set_ha_value, False)
+        # self.is_on = False
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Instruct the switch to turn on."""
         if not self._device.is_available:
             return None
 
-        await self.hass.async_add_executor_job(self._device.set_ha_value, True)
-        self._is_on = True
+        ha_val = self._device.get_value().ha_value
+        ha_val.on = True
+        await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
 
-    def _callback(self, new_value: Any) -> None:
-        """Get callback data from the broker."""
-        super()._callback(new_value)
-        # if self._state_attrs is not None:
-        #     if isinstance(self._device.state, bool) is False:
-        #         self._state_attrs[ATTR_TEMPERATURE] = self._device.state.temperature
-        #         self._state_attrs["on"] = self._device.state.on
+        # await self.hass.async_add_executor_job(self._device.set_ha_value, True)
+        # self.is_on = True
+
+    # def _callback(self, new_value: Any) -> None:
+    #    """Get callback data from the broker."""
+    #    super()._callback(new_value)
+    #    if self._state_attrs is not None:
+    #    if isinstance(self._device.state, bool) is False:
+    #        self._state_attrs[ATTR_TEMPERATURE] = self._device.state.temperature
+    #        self._state_attrs["on"] = self._device.state.on
 
 
 class InelsComplexSwitch(InelsBaseEntity, SwitchEntity):

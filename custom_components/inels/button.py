@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from inelsmqtt.devices import Device
-from inelsmqtt.const import GTR3_50
+from inelsmqtt.const import GTR3_50, DA3_22M, GSB3_90SX
 
 from homeassistant.components.button import (
     SERVICE_PRESS,
@@ -42,57 +42,60 @@ async def async_setup_entry(
     entities = []
 
     for device in device_list:
-        if device.device_type == Platform.SENSOR:
-            if device.inels_type == GTR3_50:  # 2 DIN, 5 SW
-                val = device.get_value()
-                if "din" in val.ha_value.__dict__:
-                    for k, v in enumerate(val.ha_value.din):
-                        entities.append(
-                            InelsBusButton(
-                                device=device,
-                                description=InelsButtonDescription(
-                                    key=f"{k+1}",  # starts counting at 1
-                                    name=f"DIN {k+1}",
-                                    icon=ICON_BUTTON,
-                                    entity_category=EntityCategory.CONFIG,
-                                    # only if needed
-                                    var="din",
-                                    index=k,
-                                ),
-                            )
+        if (
+            device.inels_type == GTR3_50
+            or device.inels_type == DA3_22M
+            or device.inels_type is GSB3_90SX
+        ):
+            val = device.get_value()
+            if "din" in val.ha_value.__dict__:
+                for k, v in enumerate(val.ha_value.din):
+                    entities.append(
+                        InelsBusButton(
+                            device=device,
+                            description=InelsButtonDescription(
+                                key=f"{k+1}",  # starts counting at 1
+                                name=f"DIN {k+1}",
+                                icon=ICON_BUTTON,
+                                entity_category=EntityCategory.CONFIG,
+                                # only if needed
+                                var="din",
+                                index=k,
+                            ),
                         )
-                if "sw" in val.ha_value.__dict__:
-                    for k, v in enumerate(val.ha_value.sw):
-                        entities.append(
-                            InelsBusButton(
-                                device=device,
-                                description=InelsButtonDescription(
-                                    key=f"{k+1}",  # starts counting at 1
-                                    name=f"SW {k+1}",
-                                    icon=ICON_BUTTON,
-                                    entity_category=EntityCategory.CONFIG,
-                                    # only if needed
-                                    var="sw",
-                                    index=k,
-                                ),
-                            )
+                    )
+            if "sw" in val.ha_value.__dict__:
+                for k, v in enumerate(val.ha_value.sw):
+                    entities.append(
+                        InelsBusButton(
+                            device=device,
+                            description=InelsButtonDescription(
+                                key=f"{k+1}",  # starts counting at 1
+                                name=f"SW {k+1}",
+                                icon=ICON_BUTTON,
+                                entity_category=EntityCategory.CONFIG,
+                                # only if needed
+                                var="sw",
+                                index=k,
+                            ),
                         )
-                if "plusminus" in val.ha_value.__dict__:
-                    for k, v in enumerate(val.ha_value.plusminus):
-                        entities.append(
-                            InelsBusButton(
-                                device=device,
-                                description=InelsButtonDescription(
-                                    key=f"{k+1}",  # starts counting at 1
-                                    name="Plus" if k == 0 else "Minus",
-                                    icon=ICON_PLUS if k == 0 else ICON_MINUS,
-                                    entity_category=EntityCategory.CONFIG,
-                                    # only if needed
-                                    var="plusminus",
-                                    index=k,
-                                ),
-                            )
+                    )
+            if "plusminus" in val.ha_value.__dict__:
+                for k, v in enumerate(val.ha_value.plusminus):
+                    entities.append(
+                        InelsBusButton(
+                            device=device,
+                            description=InelsButtonDescription(
+                                key=f"{k+1}",  # starts counting at 1
+                                name="Plus" if k == 0 else "Minus",
+                                icon=ICON_PLUS if k == 0 else ICON_MINUS,
+                                entity_category=EntityCategory.CONFIG,
+                                # only if needed
+                                var="plusminus",
+                                index=k,
+                            ),
                         )
+                    )
         elif device.device_type == Platform.BUTTON:
             index = 1
             val = device.get_value()
@@ -172,8 +175,11 @@ class InelsBusButton(InelsBaseEntity, ButtonEntity):
     def _callback(self, new_value: Any) -> None:
         super()._callback(new_value)
         key_index = int(self.entity_description.key)
-
-        entity_id = f"{Platform.BUTTON}.{self._device_id}_{self.entity_description.var}_{key_index}"
+        if self.entity_description.var != "plusminus":
+            entity_id = f"{Platform.BUTTON}.{self._device_id}_{self.entity_description.var}_{key_index}"
+        else:
+            name = "plus" if key_index == 1 else "minus"
+            entity_id = f"{Platform.BUTTON}.{self._device_id}_{name}"
 
         curr_val = self._device.values.ha_value
         last_val = self._device.last_values.ha_value
