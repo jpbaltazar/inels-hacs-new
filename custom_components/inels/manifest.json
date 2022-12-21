@@ -6,7 +6,7 @@
   "issue_tracker": "https://github.com/zed4805/inels-hacs/issues",
   "documentation": "https://github.com/zed4805/inels-hacs",
   "requirements": [
-    "inels-mqtt-new==0.0.31"
+    "inels-mqtt-new==0.0.32"
   ],
   "dependencies": [
     "mqtt"
