@@ -1,6 +1,7 @@
 """Inels switch entity."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from collections.abc import Mapping
 from typing import Any
 
@@ -10,9 +11,10 @@ from inelsmqtt.const import (
     # Inels types
     RFSC_61,
     SA3_01B,
+    SA3_04M,
 )
 
-from homeassistant.components.switch import SwitchEntity
+from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -38,7 +40,10 @@ async def async_setup_entry(
             elif device.inels_type == SA3_01B:
                 entities.append(InelsSwitch(device=device))
                 # LOGGER.info("Added SA3_01B (%s)", device.get_unique_id())
-
+            elif device.inels_type == SA3_04M:
+                entities.append(
+                    InelsSwitch
+                )
     async_add_entities(entities, True)
 
 
@@ -68,13 +73,6 @@ class InelsSwitch(InelsBaseEntity, SwitchEntity):
         """Switch icon."""
         return ICON_SWITCH
 
-    # @property
-    # def extra_state_attributes(self) -> Mapping[str, Any] | None:
-    #     """Extra attributes if exists."""
-    #     if self._state_attrs is None:
-    #         return super().extra_state_attributes
-    #     return self._state_attrs
-
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Instruct the switch to turn off."""
         if not self._device.is_available:
@@ -83,9 +81,6 @@ class InelsSwitch(InelsBaseEntity, SwitchEntity):
         ha_val = self._device.get_value().ha_value
         ha_val.on = False
         await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
-
-        # await self.hass.async_add_executor_job(self._device.set_ha_value, False)
-        # self.is_on = False
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Instruct the switch to turn on."""
@@ -96,9 +91,6 @@ class InelsSwitch(InelsBaseEntity, SwitchEntity):
         ha_val.on = True
         await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
 
-        # await self.hass.async_add_executor_job(self._device.set_ha_value, True)
-        # self.is_on = True
-
     # def _callback(self, new_value: Any) -> None:
     #    """Get callback data from the broker."""
     #    super()._callback(new_value)
@@ -106,3 +98,37 @@ class InelsSwitch(InelsBaseEntity, SwitchEntity):
     #    if isinstance(self._device.state, bool) is False:
     #        self._state_attrs[ATTR_TEMPERATURE] = self._device.state.temperature
     #        self._state_attrs["on"] = self._device.state.on
+
+
+@dataclass
+class InelsSwitchEntityDescription(
+    SwitchEntityDescription
+):
+    """Class for description inels entities"""
+    var: str = None
+    index: int = None
+    name: str = None
+
+
+class InelsBusSwitch(InelsBaseEntity, SwitchEntity):
+    """The platform class required by Home Assistant, bus version."""
+
+    entity_description: InelsSwitchEntityDescription
+
+    def __init__(
+        self,
+        device: Device,
+        description: InelsSwitchEntityDescription
+    ) -> None:
+        """Initialize a bus switch"""
+        super().__init__(device=device)
+
+        self.entity_description = description
+
+        self._attr_unique_id = f"{self._attr_unique_id}-{description.name}"
+        self._attr_name = f"{self._attr_name}-{description.name}"
+
+    @property
+    def available(self) -> bool:
+        val = self._device.values.ha_value
+        if val.
