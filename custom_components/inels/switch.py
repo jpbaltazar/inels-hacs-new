@@ -30,7 +30,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Load Inels switch.."""
-    device_list = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
+    device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
 
     entities = []
     for device in device_list:
@@ -41,9 +41,18 @@ async def async_setup_entry(
                 entities.append(InelsSwitch(device=device))
                 # LOGGER.info("Added SA3_01B (%s)", device.get_unique_id())
             elif device.inels_type == SA3_04M:
-                entities.append(
-                    InelsSwitch
-                )
+                for k, v in enumerate(device.state.re):
+                    entities.append(
+                        InelsBusSwitch(
+                            device=device,
+                            description=InelsSwitchEntityDescription(
+                                key=f"{k}",
+                                name=f"RE {k+1}",
+                                icon=ICON_SWITCH,
+                                index=k,
+                            ),
+                        )
+                    )
     async_add_entities(entities, True)
 
 
@@ -101,11 +110,9 @@ class InelsSwitch(InelsBaseEntity, SwitchEntity):
 
 
 @dataclass
-class InelsSwitchEntityDescription(
-    SwitchEntityDescription
-):
+class InelsSwitchEntityDescription(SwitchEntityDescription):
     """Class for description inels entities"""
-    var: str = None
+
     index: int = None
     name: str = None
 
@@ -116,19 +123,42 @@ class InelsBusSwitch(InelsBaseEntity, SwitchEntity):
     entity_description: InelsSwitchEntityDescription
 
     def __init__(
-        self,
-        device: Device,
-        description: InelsSwitchEntityDescription
+        self, device: Device, description: InelsSwitchEntityDescription
     ) -> None:
         """Initialize a bus switch"""
         super().__init__(device=device)
 
         self.entity_description = description
 
-        self._attr_unique_id = f"{self._attr_unique_id}-{description.name}"
+        self._attr_unique_id = f"{self._attr_unique_id}-{description.key}"
         self._attr_name = f"{self._attr_name}-{description.name}"
 
     @property
-    def available(self) -> bool:
-        val = self._device.values.ha_value
-        if val.
+    def is_on(self) -> bool | None:
+        state = self._device.state
+        return state.re[self.entity_description.index]
+
+    @property
+    def icon(self) -> str | None:
+        """Switch icon."""
+        return ICON_SWITCH
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Instruct the switch to turn off."""
+        if not self._device.is_available:
+            return None
+
+        ha_val = self._device.get_value().ha_value
+        ha_val.re[self.entity_description.index] = False
+
+        await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Instruct the switch to turn on."""
+        if not self._device.is_available:
+            return None
+
+        ha_val = self._device.get_value().ha_value
+        ha_val.re[self.entity_description.index] = True
+
+        await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
