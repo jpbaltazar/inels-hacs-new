@@ -16,6 +16,8 @@ from inelsmqtt.const import (
     DA3_22M,
     GTR3_50,
     GSB3_90SX,
+    WSB3_20H,
+    GSB3_60S,
 )
 from inelsmqtt.devices import Device
 
@@ -279,6 +281,87 @@ SENSOR_DESCRIPTION_MULTISENSOR: "tuple[InelsSensorEntityDescription, ...]" = (
     ),
 )
 
+SENSOR_DESCRIPTION_MULTISENSOR_II: "tuple[InelsSensorEntityDescription, ...]" = (
+    InelsSensorEntityDescription(
+        key="temp_in",
+        name="Temperature",
+        # device_class=SensorDeviceClass.TEMPERATURE,
+        icon=ICON_TEMPERATURE,
+        native_unit_of_measurement=TEMP_CELSIUS,
+        value=__get_temperature_bus,
+    ),
+    InelsSensorEntityDescription(
+        key="ain",
+        name="Analog temperature",
+        # device_class=SensorDeviceClass.TEMPERATURE,
+        icon=ICON_TEMPERATURE,
+        native_unit_of_measurement=TEMP_CELSIUS,
+        value=__get_analog_temperature_bus,
+    ),
+    InelsSensorEntityDescription(
+        key="humidity",
+        name="Humidity",
+        # device_class=SensorDeviceClass.HUMIDITY,
+        icon=ICON_HUMIDITY,
+        native_unit_of_measurement=PERCENTAGE,
+        value=__get_humidity_bus,
+    ),
+    InelsSensorEntityDescription(
+        key="dewpoint",
+        name="Dew point",
+        # device_class=SensorDeviceClass.TEMPERATURE,
+        icon=ICON_DEW_POINT,
+        native_unit_of_measurement=TEMP_CELSIUS,
+        value=__get_dew_point_bus,
+    ),
+)
+
+SENSOR_DESCRIPTION_MULTISENSOR_III: "tuple[InelsSensorEntityDescription, ...]" = (
+    InelsSensorEntityDescription(
+        key="temp_in",
+        name="Temperature",
+        # device_class=SensorDeviceClass.TEMPERATURE,
+        icon=ICON_TEMPERATURE,
+        native_unit_of_measurement=TEMP_CELSIUS,
+        value=__get_temperature_bus,
+    ),
+    InelsSensorEntityDescription(
+        key="light_in",
+        name="Light intensity",
+        # device_class=SensorDeviceClass.ILLUMINANCE,
+        icon=ICON_LIGHT_IN,
+        native_unit_of_measurement="lux",
+        value=__get_light_in_bus,
+    ),
+    InelsSensorEntityDescription(
+        key="ain",
+        name="Analog temperature",
+        # device_class=SensorDeviceClass.TEMPERATURE,
+        icon=ICON_TEMPERATURE,
+        native_unit_of_measurement=TEMP_CELSIUS,
+        value=__get_analog_temperature_bus,
+    ),
+)
+
+SENSOR_DESCRIPTION_MULTISENSOR_IIII: "tuple[InelsSensorEntityDescription, ...]" = (
+    InelsSensorEntityDescription(
+        key="temp_in",
+        name="Temperature",
+        # device_class=SensorDeviceClass.TEMPERATURE,
+        icon=ICON_TEMPERATURE,
+        native_unit_of_measurement=TEMP_CELSIUS,
+        value=__get_temperature_bus,
+    ),
+    InelsSensorEntityDescription(
+        key="ain",
+        name="Analog temperature",
+        # device_class=SensorDeviceClass.TEMPERATURE,
+        icon=ICON_TEMPERATURE,
+        native_unit_of_measurement=TEMP_CELSIUS,
+        value=__get_analog_temperature_bus,
+    ),
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -306,6 +389,10 @@ async def async_setup_entry(
                             description=description,
                         )
                     )
+            elif device.inels_type == WSB3_20H:
+                descriptions = SENSOR_DESCRIPTION_MULTISENSOR_II
+                for description in descriptions:
+                    entities.append(InelsSensor(device, description=description))
             else:
                 continue
         elif device.device_type == Platform.LIGHT:
@@ -328,6 +415,10 @@ async def async_setup_entry(
                             description=description,
                         )
                     )
+            elif device.inels_type == GSB3_60S:
+                descriptions = SENSOR_DESCRIPTION_MULTISENSOR_III
+                for description in descriptions:
+                    entities.append(InelsSensor(device, description=description))
     async_add_entities(entities, True)
 
 

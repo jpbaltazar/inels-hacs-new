@@ -33,6 +33,7 @@ ICON_PLUS = "mdi:plus"
 ICON_MINUS = "mdi:minus"
 ICON_ALERT = "mdi:alert"
 ICON_PROXIMITY = "mdi:contactless-payment"
+ICON_BINARY_INPUT = "mdi:ab-testing"
 
 ICON_WATER_HEATER_DICT = {
     "on": "mdi:valve-open",

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from inelsmqtt.devices import Device
-from inelsmqtt.const import GTR3_50, DA3_22M, GSB3_90SX
+from inelsmqtt.const import GTR3_50, DA3_22M, GSB3_90SX, SA3_04M, SA3_012M, WSB3_20H
 
 from homeassistant.components.button import (
     SERVICE_PRESS,
@@ -31,6 +31,9 @@ class InelsButtonDescription(ButtonEntityDescription):
     index: int = None  # 1, 2, 3, 4...
 
 
+supported_devices = [GTR3_50, DA3_22M, GSB3_90SX, SA3_04M, SA3_012M, WSB3_20H]
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
@@ -42,11 +45,7 @@ async def async_setup_entry(
     entities = []
 
     for device in device_list:
-        if (
-            device.inels_type is GTR3_50
-            or device.inels_type is DA3_22M
-            or device.inels_type is GSB3_90SX
-        ):
+        if device.inels_type in supported_devices:
             val = device.get_value()
             if "din" in val.ha_value.__dict__:
                 for k, v in enumerate(val.ha_value.din):

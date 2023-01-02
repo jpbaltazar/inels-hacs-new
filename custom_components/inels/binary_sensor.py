@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from inelsmqtt.devices import Device
-from inelsmqtt.const import GSB3_90SX, DA3_22M, GTR3_50
+from inelsmqtt.const import GSB3_90SX, DA3_22M, GTR3_50, IM3_80B, IM3_140M, DA3_66M
 
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
@@ -17,7 +17,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_class import InelsBaseEntity
-from .const import DEVICES, DOMAIN, ICON_ALERT, ICON_PROXIMITY
+from .const import (
+    DEVICES,
+    DOMAIN,
+    ICON_ALERT,
+    ICON_PROXIMITY,
+    ICON_BINARY_INPUT,
+    LOGGER,
+)
 
 
 @dataclass
@@ -36,7 +43,7 @@ class InelsBinarySensorEntityDescription(
     index: int = None
 
 
-supported = [GSB3_90SX, DA3_22M, GTR3_50]
+supported = [GSB3_90SX, DA3_22M, DA3_66M, GTR3_50, IM3_80B, IM3_140M]
 
 
 async def async_setup_entry(
@@ -94,6 +101,21 @@ async def async_setup_entry(
                         ),
                     )
                 )
+            if "input" in val.ha_value.__dict__:
+                for k, v in enumerate(val.ha_value.input):
+                    entities.append(
+                        InelsBinaryInputSensor(
+                            device=device,
+                            description=InelsBinarySensorEntityDescription(
+                                key=f"{k}",
+                                name="Binary input sensor",
+                                icon=ICON_BINARY_INPUT,
+                                var="input",
+                                array=True,
+                                index=k,
+                            ),
+                        )
+                    )
     async_add_entities(entities, True)
 
 
@@ -143,3 +165,65 @@ class InelsBinarySensor(InelsBaseEntity, BinarySensorEntity):
             ]
         else:
             return self._device.values.ha_value.__dict__[self.entity_description.var]
+
+
+class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
+    """The platform class for binary sensors of binary values for home assistant"""
+
+    entity_description: InelsBinarySensorEntityDescription
+
+    def __init__(
+        self, device: Device, description: InelsBinarySensorEntityDescription
+    ) -> None:
+        """Initialize a binary sensor."""
+        super().__init__(device=device)
+
+        self.entity_description = description
+
+        self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.var}-{self.entity_description.index}"  # TODO make sure it doesn't need more info
+
+        self._attr_name = f"{self._attr_name}-{self.entity_description.name}-{self.entity_description.index +1 }"
+
+    @property
+    def available(self) -> bool:
+        val = self._device.values.ha_value.__dict__[self.entity_description.var][
+            self.entity_description.index
+        ]
+
+        last_val = self._device.last_values.ha_value.__dict__[
+            self.entity_description.var
+        ][self.entity_description.index]
+
+        LOGGER.info("%s value %d", self._attr_unique_id, val)
+
+        if val in [0, 1]:
+            return True
+        elif last_val != val:
+            if val == 2:
+                LOGGER.warning("%s ALERT", self._attr_unique_id)
+            elif val == 3:
+                LOGGER.warning("%s TAMPER", self._attr_unique_id)
+        return False
+
+    @property
+    def unique_id(self) -> str | None:
+        return super().unique_id
+
+    @property
+    def name(self) -> str | None:
+        return super().name
+
+    @property
+    def is_on(self):
+        """Return true is sensor is on"""
+        if self.entity_description.array:
+            return (
+                self._device.values.ha_value.__dict__[self.entity_description.var][
+                    self.entity_description.index
+                ]
+                == 1
+            )
+        else:
+            return (
+                self._device.values.ha_value.__dict__[self.entity_description.var] == 1
+            )

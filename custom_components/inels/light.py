@@ -1,8 +1,9 @@
 """iNels light."""
 from __future__ import annotations
 from typing import Any, cast
+from dataclasses import dataclass
 
-from inelsmqtt.const import RFDAC_71B, DA3_22M  # HERE ?
+from inelsmqtt.const import RFDAC_71B, DA3_22M, DA3_66M  # HERE ?
 from inelsmqtt.devices import Device
 
 from homeassistant.components.light import (
@@ -21,6 +22,9 @@ from .base_class import InelsBaseEntity
 from .const import DEVICES, DOMAIN, ICON_LIGHT
 
 
+bus_lights = [DA3_22M, DA3_66M]
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
@@ -33,8 +37,7 @@ async def async_setup_entry(
 
     for device in device_list:
         if device.device_type == Platform.LIGHT:
-            # entities.append(InelsLight(device))
-            if device.inels_type == DA3_22M:
+            if device.inels_type in bus_lights:
                 dev_val = device.get_value()
                 if "out" in device.get_value().ha_value.__dict__:
                     out_len = len(dev_val.ha_value.out)
@@ -135,7 +138,7 @@ class InelsLightChannel(InelsBaseEntity, LightEntity):
         self._attr_name = f"{self._attr_name}-{description.channel_index}"
 
         self._attr_supported_color_modes: set[ColorMode] = set()
-        if self._device.inels_type is DA3_22M:
+        if self._device.inels_type in bus_lights:
             self._attr_supported_color_modes.add(ColorMode.BRIGHTNESS)
 
     @property
