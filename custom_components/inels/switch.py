@@ -11,7 +11,10 @@ from inelsmqtt.const import (
     # Inels types
     RFSC_61,
     SA3_01B,
+    SA3_02B,
+    SA3_02M,
     SA3_04M,
+    SA3_06M,
     SA3_012M,
 )
 
@@ -41,7 +44,7 @@ async def async_setup_entry(
             elif device.inels_type == SA3_01B:
                 entities.append(InelsSwitch(device=device))
                 # LOGGER.info("Added SA3_01B (%s)", device.get_unique_id())
-            elif device.inels_type is SA3_04M or device.inels_type is SA3_012M:
+            elif device.inels_type in [SA3_02B, SA3_02M, SA3_04M, SA3_06M, SA3_012M]:
                 for k, v in enumerate(device.state.re):
                     entities.append(
                         InelsBusSwitch(

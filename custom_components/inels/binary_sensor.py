@@ -4,7 +4,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from inelsmqtt.devices import Device
-from inelsmqtt.const import GSB3_90SX, DA3_22M, GTR3_50, IM3_80B, IM3_140M, DA3_66M
+from inelsmqtt.const import (
+    GSB3_90SX,
+    DA3_22M,
+    GTR3_50,
+    IM3_80B,
+    IM3_140M,
+    DA3_66M,
+    IM3_20B,
+    IM3_40B,
+    DMD3_1,
+)
 
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
@@ -43,7 +53,17 @@ class InelsBinarySensorEntityDescription(
     index: int = None
 
 
-supported = [GSB3_90SX, DA3_22M, DA3_66M, GTR3_50, IM3_80B, IM3_140M]
+supported = [
+    GSB3_90SX,
+    DA3_22M,
+    DA3_66M,
+    GTR3_50,
+    IM3_80B,
+    IM3_140M,
+    IM3_20B,
+    IM3_40B,
+    DMD3_1,
+]
 
 
 async def async_setup_entry(
@@ -193,8 +213,6 @@ class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
         last_val = self._device.last_values.ha_value.__dict__[
             self.entity_description.var
         ][self.entity_description.index]
-
-        LOGGER.info("%s value %d", self._attr_unique_id, val)
 
         if val in [0, 1]:
             return True

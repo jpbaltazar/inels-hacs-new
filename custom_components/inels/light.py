@@ -154,7 +154,7 @@ class InelsLightChannel(InelsBaseEntity, LightEntity):
     @property
     def brightness(self) -> int | None:
         """Light brightness."""
-        if self._device.inels_type is not DA3_22M:
+        if self._device.inels_type not in bus_lights:
             return None
         # return cast(int, self._device.get_value().out[self.entity_description.channel_index])
         return cast(

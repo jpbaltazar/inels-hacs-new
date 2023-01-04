@@ -5,7 +5,21 @@ from dataclasses import dataclass
 from typing import Any
 
 from inelsmqtt.devices import Device
-from inelsmqtt.const import GTR3_50, DA3_22M, GSB3_90SX, SA3_04M, SA3_012M, WSB3_20H
+from inelsmqtt.const import (
+    GTR3_50,
+    DA3_22M,
+    GSB3_90SX,
+    SA3_02B,
+    SA3_02M,
+    SA3_04M,
+    SA3_06M,
+    SA3_012M,
+    WSB3_20H,
+    DA3_66M,
+    WSB3_20,
+    WSB3_40,
+    WSB3_40HUM,
+)
 
 from homeassistant.components.button import (
     SERVICE_PRESS,
@@ -31,7 +45,21 @@ class InelsButtonDescription(ButtonEntityDescription):
     index: int = None  # 1, 2, 3, 4...
 
 
-supported_devices = [GTR3_50, DA3_22M, GSB3_90SX, SA3_04M, SA3_012M, WSB3_20H]
+supported_devices = [
+    GTR3_50,
+    DA3_22M,
+    GSB3_90SX,
+    SA3_02B,
+    SA3_02M,
+    SA3_04M,
+    SA3_06M,
+    SA3_012M,
+    WSB3_20H,
+    DA3_66M,
+    WSB3_20,
+    WSB3_40,
+    WSB3_40HUM,
+]
 
 
 async def async_setup_entry(
