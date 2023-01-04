@@ -71,20 +71,22 @@ class InelsSensorEntityDescription(
 ):
     """Class for describing inels entities."""
 
+    var: str = None
+    index: int = None
+
 
 @dataclass
-class InelsSensorArrayEntitydDescriptionMixin:
+class InelsBusSensorDescriptionMixin:
     """Mixin keys."""
 
-    value: Callable[[Device, int], Any | None]
-
 
 @dataclass
-class InelsSensorArrayEntityDescription(
-    SensorEntityDescription, InelsSensorArrayEntitydDescriptionMixin
+class InelsBusSensorDescription(
+    SensorEntityDescription, InelsBusSensorDescriptionMixin
 ):
     """Class for describing inels entities."""
 
+    var: str = None
     index: int = None
 
 
@@ -183,51 +185,6 @@ def __get_temperature_out(device: Device) -> float | None:
     )
 
 
-# BUS
-
-
-def __get_temperature_bus(device: Device) -> str | None:
-    """Get temperature from state field temp_in"""
-    if device.is_available is False:
-        return None
-
-    return _process_value(device.state.temp_in)
-
-
-def __get_light_in_bus(device: Device) -> str | None:
-    if device.is_available is False:
-        return None
-
-    return _process_value(device.state.light_in)
-
-
-def __get_analog_temperature_bus(device: Device) -> str | None:
-    if device.is_available is False:
-        return None
-    return _process_value(device.state.ain)
-
-
-def __get_humidity_bus(device: Device) -> str | None:
-    if device.is_available is False:
-        return None
-
-    return _process_value(device.state.humidity)
-
-
-def __get_dew_point_bus(device: Device) -> str | None:
-    if device.is_available is False:
-        return None
-
-    return _process_value(device.state.dewpoint)
-
-
-def __get_temps_bus(device: Device, index: int) -> str | None:
-    if device.is_available is False:
-        return None
-
-    return _process_value(device.state.temps[index])
-
-
 # RFTI_10B
 
 SENSOR_DESCRIPTION_TEMPERATURE: "tuple[InelsSensorEntityDescription, ...]" = (
@@ -257,209 +214,25 @@ SENSOR_DESCRIPTION_TEMPERATURE: "tuple[InelsSensorEntityDescription, ...]" = (
     ),
 )
 
-# SA3_01B
-# DA3_22M
-SENSOR_DESCRIPTION_TEMPERATURE_GENERIC: "tuple[InelsSensorEntityDescription, ...]" = (
-    InelsSensorEntityDescription(
-        key="temp_in",
-        name="Temperature",
-        # device_class=SensorDeviceClass.TEMPERATURE,
-        icon=ICON_TEMPERATURE,
-        native_unit_of_measurement=TEMP_CELSIUS,
-        value=__get_temperature_bus,
-    ),
-)
-
-# GTR3_50
-# GSB3_90SX
-SENSOR_DESCRIPTION_MULTISENSOR: "tuple[InelsSensorEntityDescription, ...]" = (
-    InelsSensorEntityDescription(
-        key="temp_in",
-        name="Temperature",
-        # device_class=SensorDeviceClass.TEMPERATURE,
-        icon=ICON_TEMPERATURE,
-        native_unit_of_measurement=TEMP_CELSIUS,
-        value=__get_temperature_bus,
-    ),
-    InelsSensorEntityDescription(
-        key="light_in",
-        name="Light intensity",
-        # device_class=SensorDeviceClass.ILLUMINANCE,
-        icon=ICON_LIGHT_IN,
-        native_unit_of_measurement="lux",
-        value=__get_light_in_bus,
-    ),
-    InelsSensorEntityDescription(
-        key="ain",
-        name="Analog temperature",
-        # device_class=SensorDeviceClass.TEMPERATURE,
-        icon=ICON_TEMPERATURE,
-        native_unit_of_measurement=TEMP_CELSIUS,
-        value=__get_analog_temperature_bus,
-    ),
-    InelsSensorEntityDescription(
-        key="humidity",
-        name="Humidity",
-        # device_class=SensorDeviceClass.HUMIDITY,
-        icon=ICON_HUMIDITY,
-        native_unit_of_measurement=PERCENTAGE,
-        value=__get_humidity_bus,
-    ),
-    InelsSensorEntityDescription(
-        key="dewpoint",
-        name="Dew point",
-        # device_class=SensorDeviceClass.TEMPERATURE,
-        icon=ICON_DEW_POINT,
-        native_unit_of_measurement=TEMP_CELSIUS,
-        value=__get_dew_point_bus,
-    ),
-)
-
-SENSOR_DESCRIPTION_MULTISENSOR_II: "tuple[InelsSensorEntityDescription, ...]" = (
-    InelsSensorEntityDescription(
-        key="temp_in",
-        name="Temperature",
-        # device_class=SensorDeviceClass.TEMPERATURE,
-        icon=ICON_TEMPERATURE,
-        native_unit_of_measurement=TEMP_CELSIUS,
-        value=__get_temperature_bus,
-    ),
-    InelsSensorEntityDescription(
-        key="ain",
-        name="Analog temperature",
-        # device_class=SensorDeviceClass.TEMPERATURE,
-        icon=ICON_TEMPERATURE,
-        native_unit_of_measurement=TEMP_CELSIUS,
-        value=__get_analog_temperature_bus,
-    ),
-    InelsSensorEntityDescription(
-        key="humidity",
-        name="Humidity",
-        # device_class=SensorDeviceClass.HUMIDITY,
-        icon=ICON_HUMIDITY,
-        native_unit_of_measurement=PERCENTAGE,
-        value=__get_humidity_bus,
-    ),
-    InelsSensorEntityDescription(
-        key="dewpoint",
-        name="Dew point",
-        # device_class=SensorDeviceClass.TEMPERATURE,
-        icon=ICON_DEW_POINT,
-        native_unit_of_measurement=TEMP_CELSIUS,
-        value=__get_dew_point_bus,
-    ),
-)
-
-SENSOR_DESCRIPTION_MULTISENSOR_III: "tuple[InelsSensorEntityDescription, ...]" = (
-    InelsSensorEntityDescription(
-        key="temp_in",
-        name="Temperature",
-        # device_class=SensorDeviceClass.TEMPERATURE,
-        icon=ICON_TEMPERATURE,
-        native_unit_of_measurement=TEMP_CELSIUS,
-        value=__get_temperature_bus,
-    ),
-    InelsSensorEntityDescription(
-        key="light_in",
-        name="Light intensity",
-        # device_class=SensorDeviceClass.ILLUMINANCE,
-        icon=ICON_LIGHT_IN,
-        native_unit_of_measurement="lux",
-        value=__get_light_in_bus,
-    ),
-    InelsSensorEntityDescription(
-        key="ain",
-        name="Analog temperature",
-        # device_class=SensorDeviceClass.TEMPERATURE,
-        icon=ICON_TEMPERATURE,
-        native_unit_of_measurement=TEMP_CELSIUS,
-        value=__get_analog_temperature_bus,
-    ),
-)
-
-SENSOR_DESCRIPTION_MULTISENSOR_IV: "tuple[InelsSensorEntityDescription, ...]" = (
-    InelsSensorEntityDescription(
-        key="temp_in",
-        name="Temperature",
-        # device_class=SensorDeviceClass.TEMPERATURE,
-        icon=ICON_TEMPERATURE,
-        native_unit_of_measurement=TEMP_CELSIUS,
-        value=__get_temperature_bus,
-    ),
-    InelsSensorEntityDescription(
-        key="ain",
-        name="Analog temperature",
-        # device_class=SensorDeviceClass.TEMPERATURE,
-        icon=ICON_TEMPERATURE,
-        native_unit_of_measurement=TEMP_CELSIUS,
-        value=__get_analog_temperature_bus,
-    ),
-)
-
-SENSOR_DESCRIPTION_MULTISENSOR_V: "tuple[InelsSensorEntityDescription, ...]" = (
-    InelsSensorEntityDescription(
-        key="light_in",
-        name="Light intensity",
-        # device_class=SensorDeviceClass.ILLUMINANCE,
-        icon=ICON_LIGHT_IN,
-        native_unit_of_measurement="lux",
-        value=__get_light_in_bus,
-    ),
-    InelsSensorEntityDescription(
-        key="temp_in",
-        name="Temperature",
-        # device_class=SensorDeviceClass.TEMPERATURE,
-        icon=ICON_TEMPERATURE,
-        native_unit_of_measurement=TEMP_CELSIUS,
-        value=__get_temperature_bus,
-    ),
-    InelsSensorEntityDescription(
-        key="humidity",
-        name="Humidity",
-        # device_class=SensorDeviceClass.HUMIDITY,
-        icon=ICON_HUMIDITY,
-        native_unit_of_measurement=PERCENTAGE,
-        value=__get_humidity_bus,
-    ),
-)
-
-
-# TODO: redo system
-
-# SENSOR_DESCRIPTION_TEMPERATURE
-#       battery
-#       temp_in
-#       temp_out
-
-# SENSOR_DESCRIPTION_TEMPERATURE_GENERIC
-#       temp_in
-
-# SENSOR_DESCRIPTION_MULTISENSOR
-#       temp_in
-#       light_in
-#       ain
-#       humidity
-#       dewpoint
-
-# SENSOR_DESCRIPTION_MULTISENSOR_II
-#       temp_in
-#       ain
-#       humidity
-#       dewpoint
-
-# SENSOR_DESCRIPTION_MULTISENSOR_III
-#       temp_in
-#       light_in
-#       ain
-
-# SENSOR_DESCRIPTION_MULTISENSOR_IV
-#       temp_in
-#       ain
-
-# SENSOR_DESCRIPTION_MULTISENSOR_V
-#       light_in
-#       temp_in
-#       humidity
+bus_devices = [
+    GTR3_50,
+    WSB3_20H,
+    WSB3_40HUM,
+    WSB3_20,
+    WSB3_40,
+    IM3_20B,
+    IM3_40B,
+    IM3_80B,
+    DMD3_1,
+    TI3_10B,
+    TI3_40B,
+    TI3_60M,
+    DA3_22M,
+    SA3_01B,
+    SA3_02B,
+    GSB3_90SX,
+    GSB3_60S,
+]
 
 
 async def async_setup_entry(
@@ -470,65 +243,105 @@ async def async_setup_entry(
     """Load Inels switch.."""
     device_list: "list[Device]" = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
 
-    entities: "list[InelsSensor]" = []
-    array_instance_entities: "list[InelsSensorArrayInstance]" = []
+    entities = []
 
     for device in device_list:
         descriptions = None
-        array_descriptions = None
 
-        if device.device_type == Platform.SENSOR:
-            if device.inels_type == RFTI_10B:
-                descriptions = SENSOR_DESCRIPTION_TEMPERATURE
-            elif device.inels_type == GTR3_50:
-                descriptions = SENSOR_DESCRIPTION_MULTISENSOR
-            elif device.inels_type in [WSB3_20H, WSB3_40HUM]:
-                descriptions = SENSOR_DESCRIPTION_MULTISENSOR_II
-            elif device.inels_type in [WSB3_20, WSB3_40]:
-                descriptions = SENSOR_DESCRIPTION_MULTISENSOR_IV
-            elif device.inels_type in [IM3_20B, IM3_40B, IM3_80B]:
-                descriptions = SENSOR_DESCRIPTION_TEMPERATURE_GENERIC
-            elif device.inels_type is DMD3_1:
-                descriptions = SENSOR_DESCRIPTION_MULTISENSOR_V
-            elif device.inels_type in [TI3_10B, TI3_40B, TI3_60M]:
-                val = device.get_value().ha_value
-                array_descriptions = []
-                for k, v in enumerate(val.temps):
-                    array_descriptions += (
-                        InelsSensorArrayEntityDescription(
-                            key="temp",
+        if device.inels_type in bus_devices:
+            val = device.get_value()
+            if "temp_in" in val.ha_value.__dict__:
+                entities.append(
+                    InelsBusSensor(
+                        device,
+                        InelsBusSensorDescription(
+                            key="temp_in",
                             name="Temperature",
-                            index=k,
-                            # device_class=SensorDeviceClass.TEMPERATURE,
                             icon=ICON_TEMPERATURE,
                             native_unit_of_measurement=TEMP_CELSIUS,
-                            value=__get_temps_bus,
+                            var="temp_in",
                         ),
                     )
-            else:
-                continue
-        elif device.device_type == Platform.LIGHT:
-            if device.inels_type == DA3_22M:
-                descriptions = SENSOR_DESCRIPTION_TEMPERATURE_GENERIC
-        elif device.device_type == Platform.SWITCH:
-            if device.inels_type in [SA3_01B, SA3_02B]:
-                descriptions = SENSOR_DESCRIPTION_TEMPERATURE_GENERIC
-        elif device.device_type == Platform.BUTTON:
-            if device.inels_type == GSB3_90SX:
-                descriptions = SENSOR_DESCRIPTION_MULTISENSOR
-            elif device.inels_type == GSB3_60S:
-                descriptions = SENSOR_DESCRIPTION_MULTISENSOR_III
-
-        if descriptions is not None:
-            for description in descriptions:
-                entities.append(InelsSensor(device, description=description))
-        if array_descriptions is not None:
-            for description in array_descriptions:
-                array_instance_entities.append(
-                    InelsSensorArrayInstance(device, description)
                 )
+            if "light_in" in val.ha_value.__dict__:
+                entities.append(
+                    InelsBusSensor(
+                        device,
+                        InelsBusSensorDescription(
+                            key="light_in",
+                            name="Light intensity",
+                            icon=ICON_LIGHT_IN,
+                            native_unit_of_measurement="lux",
+                            var="light_in",
+                        ),
+                    )
+                )
+            if "ain" in val.ha_value.__dict__:
+                entities.append(
+                    InelsBusSensor(
+                        device,
+                        InelsBusSensorDescription(
+                            key="ain",
+                            name="Analog temperature",
+                            icon=ICON_TEMPERATURE,
+                            native_unit_of_measurement=TEMP_CELSIUS,
+                            var="ain",
+                        ),
+                    )
+                )
+            if "humidity" in val.ha_value.__dict__:
+                entities.append(
+                    InelsBusSensor(
+                        device,
+                        InelsBusSensorDescription(
+                            key="humidity",
+                            name="Humidity",
+                            icon=ICON_HUMIDITY,
+                            native_unit_of_measurement=PERCENTAGE,
+                            var="humidity",
+                        ),
+                    )
+                )
+            if "dewpoint" in val.ha_value.__dict__:
+                entities.append(
+                    InelsBusSensor(
+                        device,
+                        InelsBusSensorDescription(
+                            key="dewpoint",
+                            name="Dew point",
+                            icon=ICON_DEW_POINT,
+                            native_unit_of_measurement=TEMP_CELSIUS,
+                            var="dewpoint",
+                        ),
+                    )
+                )
+            if "temps" in val.ha_value.__dict__:
+                for k, v in enumerate(val.ha_value.temps):
+                    entities.append(
+                        InelsBusSensor(
+                            device,
+                            InelsBusSensorDescription(
+                                key="temp",
+                                name="Temperature",
+                                icon=ICON_TEMPERATURE,
+                                native_unit_of_measurement=TEMP_CELSIUS,
+                                var="temps",
+                                index=k,
+                            ),
+                        )
+                    )
+        else:
+            descriptions = []
+
+            if device.device_type == Platform.SENSOR:
+                if device.inels_type == RFTI_10B:
+                    descriptions = SENSOR_DESCRIPTION_TEMPERATURE
+
+            if descriptions is not None:
+                for description in descriptions:
+                    entities.append(InelsSensor(device, description=description))
+
     async_add_entities(entities, True)
-    async_add_entities(array_instance_entities, True)
 
 
 class InelsSensor(InelsBaseEntity, SensorEntity):
@@ -562,17 +375,17 @@ class InelsSensor(InelsBaseEntity, SensorEntity):
         self._attr_native_value = self.entity_description.value(self._device)
 
 
-class InelsSensorArrayInstance(InelsBaseEntity, SensorEntity):
-    """The platform class required by Home Assistant."""
+class InelsBusSensor(InelsBaseEntity, SensorEntity):
+    """Platform class for Home assistant, bus version"""
 
-    entity_description: InelsSensorArrayEntityDescription
+    entity_description: InelsBusSensorDescription
 
     def __init__(
         self,
         device: Device,
-        description: InelsSensorArrayEntityDescription,
+        description: InelsBusSensorDescription,
     ) -> None:
-        """Initialize a sensor."""
+        """Initialize bus sensor"""
         super().__init__(device=device)
 
         self.entity_description = description
@@ -585,13 +398,28 @@ class InelsSensorArrayInstance(InelsBaseEntity, SensorEntity):
             if self.entity_description.index is not None:
                 self._attr_name += f"-{self.entity_description.index}"
 
-        self._attr_native_value = self.entity_description.value(
-            self._device, self.entity_description.index
-        )
+        if self.entity_description.index is not None:
+            self._attr_native_value = _process_value(
+                self._device.state.__dict__[self.entity_description.var][
+                    self.entity_description.index
+                ]
+            )
+        else:
+            self._attr_native_value = _process_value(
+                self._device.state.__dict__[self.entity_description.var]
+            )
 
     def _callback(self, new_value: Any) -> None:
         """Refresh data."""
         super()._callback(new_value)
-        self._attr_native_value = self.entity_description.value(
-            self._device, self.entity_description.index
-        )
+
+        if self.entity_description.index is not None:
+            self._attr_native_value = _process_value(
+                self._device.state.__dict__[self.entity_description.var][
+                    self.entity_description.index
+                ]
+            )
+        else:
+            self._attr_native_value = _process_value(
+                self._device.state.__dict__[self.entity_description.var]
+            )
