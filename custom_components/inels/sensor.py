@@ -26,6 +26,9 @@ from inelsmqtt.const import (
     IM3_40B,
     IM3_80B,
     DMD3_1,
+    TI3_10B,
+    TI3_40B,
+    TI3_60M,
 )
 from inelsmqtt.devices import Device
 
@@ -67,6 +70,22 @@ class InelsSensorEntityDescription(
     SensorEntityDescription, InelsSensorEntityDescriptionMixin
 ):
     """Class for describing inels entities."""
+
+
+@dataclass
+class InelsSensorArrayEntitydDescriptionMixin:
+    """Mixin keys."""
+
+    value: Callable[[Device, int], Any | None]
+
+
+@dataclass
+class InelsSensorArrayEntityDescription(
+    SensorEntityDescription, InelsSensorArrayEntitydDescriptionMixin
+):
+    """Class for describing inels entities."""
+
+    index: int = None
 
 
 def _process_data(data: str, indexes: list) -> str:
@@ -200,6 +219,13 @@ def __get_dew_point_bus(device: Device) -> str | None:
         return None
 
     return _process_value(device.state.dewpoint)
+
+
+def __get_temps_bus(device: Device, index: int) -> str | None:
+    if device.is_available is False:
+        return None
+
+    return _process_value(device.state.temps[index])
 
 
 # RFTI_10B
@@ -445,9 +471,11 @@ async def async_setup_entry(
     device_list: "list[Device]" = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
 
     entities: "list[InelsSensor]" = []
+    array_instance_entities: "list[InelsSensorArrayInstance]" = []
 
     for device in device_list:
         descriptions = None
+        array_descriptions = None
 
         if device.device_type == Platform.SENSOR:
             if device.inels_type == RFTI_10B:
@@ -462,6 +490,21 @@ async def async_setup_entry(
                 descriptions = SENSOR_DESCRIPTION_TEMPERATURE_GENERIC
             elif device.inels_type is DMD3_1:
                 descriptions = SENSOR_DESCRIPTION_MULTISENSOR_V
+            elif device.inels_type in [TI3_10B, TI3_40B, TI3_60M]:
+                val = device.get_value().ha_value
+                array_descriptions = []
+                for k, v in enumerate(val.temps):
+                    array_descriptions += (
+                        InelsSensorArrayEntityDescription(
+                            key="temp",
+                            name="Temperature",
+                            index=k,
+                            # device_class=SensorDeviceClass.TEMPERATURE,
+                            icon=ICON_TEMPERATURE,
+                            native_unit_of_measurement=TEMP_CELSIUS,
+                            value=__get_temps_bus,
+                        ),
+                    )
             else:
                 continue
         elif device.device_type == Platform.LIGHT:
@@ -479,7 +522,13 @@ async def async_setup_entry(
         if descriptions is not None:
             for description in descriptions:
                 entities.append(InelsSensor(device, description=description))
+        if array_descriptions is not None:
+            for description in array_descriptions:
+                array_instance_entities.append(
+                    InelsSensorArrayInstance(device, description)
+                )
     async_add_entities(entities, True)
+    async_add_entities(array_instance_entities, True)
 
 
 class InelsSensor(InelsBaseEntity, SensorEntity):
@@ -497,9 +546,13 @@ class InelsSensor(InelsBaseEntity, SensorEntity):
 
         self.entity_description = description
         self._attr_unique_id = f"{self._attr_unique_id}-{description.key}"
+        if self.entity_description.index is not None:
+            self._attr_unique_id += f"-{self.entity_description.index}"
 
         if description.name:
             self._attr_name = f"{self._attr_name}-{description.name}"
+            if self.entity_description.index is not None:
+                self._attr_name += f"-{self.entity_description.index}"
 
         self._attr_native_value = self.entity_description.value(self._device)
 
@@ -507,3 +560,38 @@ class InelsSensor(InelsBaseEntity, SensorEntity):
         """Refresh data."""
         super()._callback(new_value)
         self._attr_native_value = self.entity_description.value(self._device)
+
+
+class InelsSensorArrayInstance(InelsBaseEntity, SensorEntity):
+    """The platform class required by Home Assistant."""
+
+    entity_description: InelsSensorArrayEntityDescription
+
+    def __init__(
+        self,
+        device: Device,
+        description: InelsSensorArrayEntityDescription,
+    ) -> None:
+        """Initialize a sensor."""
+        super().__init__(device=device)
+
+        self.entity_description = description
+        self._attr_unique_id = f"{self._attr_unique_id}-{description.key}"
+        if self.entity_description.index is not None:
+            self._attr_unique_id += f"-{self.entity_description.index}"
+
+        if description.name:
+            self._attr_name = f"{self._attr_name}-{description.name}"
+            if self.entity_description.index is not None:
+                self._attr_name += f"-{self.entity_description.index}"
+
+        self._attr_native_value = self.entity_description.value(
+            self._device, self.entity_description.index
+        )
+
+    def _callback(self, new_value: Any) -> None:
+        """Refresh data."""
+        super()._callback(new_value)
+        self._attr_native_value = self.entity_description.value(
+            self._device, self.entity_description.index
+        )
