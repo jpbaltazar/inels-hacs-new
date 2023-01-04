@@ -7,7 +7,7 @@ from inelsmqtt.devices import Device
 from inelsmqtt.const import (
     GSB3_90SX,
     DA3_22M,
-    GTR3_50,
+    GRT3_50,
     IM3_80B,
     IM3_140M,
     DA3_66M,
@@ -57,7 +57,7 @@ supported = [
     GSB3_90SX,
     DA3_22M,
     DA3_66M,
-    GTR3_50,
+    GRT3_50,
     IM3_80B,
     IM3_140M,
     IM3_20B,

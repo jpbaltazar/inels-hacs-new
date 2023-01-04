@@ -14,11 +14,13 @@ from inelsmqtt.const import (
     RFTI_10B,
     SA3_01B,
     DA3_22M,
-    GTR3_50,
+    GRT3_50,
+    GSB3_20SX,
+    GSB3_40SX,
+    GSB3_60SX,
     GSB3_90SX,
     WSB3_20H,
-    GSB3_60S,
-    WSB3_40HUM,
+    WSB3_40H,
     WSB3_20,
     WSB3_40,
     SA3_02B,
@@ -29,6 +31,7 @@ from inelsmqtt.const import (
     TI3_10B,
     TI3_40B,
     TI3_60M,
+    IDRT3_1,
 )
 from inelsmqtt.devices import Device
 
@@ -215,9 +218,9 @@ SENSOR_DESCRIPTION_TEMPERATURE: "tuple[InelsSensorEntityDescription, ...]" = (
 )
 
 bus_devices = [
-    GTR3_50,
+    GRT3_50,
     WSB3_20H,
-    WSB3_40HUM,
+    WSB3_40H,
     WSB3_20,
     WSB3_40,
     IM3_20B,
@@ -230,8 +233,11 @@ bus_devices = [
     DA3_22M,
     SA3_01B,
     SA3_02B,
+    GSB3_20SX,
+    GSB3_40SX,
+    GSB3_60SX,
     GSB3_90SX,
-    GSB3_60S,
+    IDRT3_1,
 ]
 
 
@@ -260,6 +266,19 @@ async def async_setup_entry(
                             icon=ICON_TEMPERATURE,
                             native_unit_of_measurement=TEMP_CELSIUS,
                             var="temp_in",
+                        ),
+                    )
+                )
+            if "temp_out" in val.ha_value.__dict__:
+                entities.append(
+                    InelsBusSensor(
+                        device,
+                        InelsBusSensorDescription(
+                            key="temp_out",
+                            name="External temperature sensor",
+                            icon=ICON_TEMPERATURE,
+                            native_unit_of_measurement=TEMP_CELSIUS,
+                            var="temp_out",
                         ),
                     )
                 )

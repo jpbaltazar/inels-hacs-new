@@ -6,8 +6,11 @@ from typing import Any
 
 from inelsmqtt.devices import Device
 from inelsmqtt.const import (
-    GTR3_50,
+    GRT3_50,
     DA3_22M,
+    GSB3_20SX,
+    GSB3_40SX,
+    GSB3_60SX,
     GSB3_90SX,
     SA3_02B,
     SA3_02M,
@@ -18,7 +21,8 @@ from inelsmqtt.const import (
     DA3_66M,
     WSB3_20,
     WSB3_40,
-    WSB3_40HUM,
+    WSB3_40H,
+    IDRT3_1,
 )
 
 from homeassistant.components.button import (
@@ -46,8 +50,11 @@ class InelsButtonDescription(ButtonEntityDescription):
 
 
 supported_devices = [
-    GTR3_50,
+    GRT3_50,
     DA3_22M,
+    GSB3_20SX,
+    GSB3_40SX,
+    GSB3_60SX,
     GSB3_90SX,
     SA3_02B,
     SA3_02M,
@@ -58,7 +65,8 @@ supported_devices = [
     DA3_66M,
     WSB3_20,
     WSB3_40,
-    WSB3_40HUM,
+    WSB3_40H,
+    IDRT3_1,
 ]
 
 
