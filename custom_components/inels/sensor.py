@@ -32,6 +32,7 @@ from inelsmqtt.const import (
     TI3_40B,
     TI3_60M,
     IDRT3_1,
+    GBP3_60,
 )
 from inelsmqtt.devices import Device
 
@@ -59,6 +60,30 @@ from .const import (
     ICON_DEW_POINT,
     ICON_LIGHT_IN,
 )
+
+bus_devices = [
+    GRT3_50,
+    WSB3_20H,
+    WSB3_40H,
+    WSB3_20,
+    WSB3_40,
+    IM3_20B,
+    IM3_40B,
+    IM3_80B,
+    DMD3_1,
+    TI3_10B,
+    TI3_40B,
+    TI3_60M,
+    DA3_22M,
+    SA3_01B,
+    SA3_02B,
+    GSB3_20SX,
+    GSB3_40SX,
+    GSB3_60SX,
+    GSB3_90SX,
+    IDRT3_1,
+    GBP3_60,
+]
 
 
 @dataclass
@@ -216,29 +241,6 @@ SENSOR_DESCRIPTION_TEMPERATURE: "tuple[InelsSensorEntityDescription, ...]" = (
         value=__get_temperature_out,
     ),
 )
-
-bus_devices = [
-    GRT3_50,
-    WSB3_20H,
-    WSB3_40H,
-    WSB3_20,
-    WSB3_40,
-    IM3_20B,
-    IM3_40B,
-    IM3_80B,
-    DMD3_1,
-    TI3_10B,
-    TI3_40B,
-    TI3_60M,
-    DA3_22M,
-    SA3_01B,
-    SA3_02B,
-    GSB3_20SX,
-    GSB3_40SX,
-    GSB3_60SX,
-    GSB3_90SX,
-    IDRT3_1,
-]
 
 
 async def async_setup_entry(

@@ -23,6 +23,7 @@ from inelsmqtt.const import (
     WSB3_40,
     WSB3_40H,
     IDRT3_1,
+    GBP3_60,
 )
 
 from homeassistant.components.button import (
@@ -67,6 +68,7 @@ supported_devices = [
     WSB3_40,
     WSB3_40H,
     IDRT3_1,
+    GBP3_60,
 ]
 
 
