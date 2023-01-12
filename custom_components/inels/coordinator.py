@@ -28,7 +28,6 @@ class InelsDeviceUpdateCoordinator(DataUpdateCoordinator[Device]):
             hass,
             LOGGER,
             name=f"Update coordinator for {device}",
-            # update_interval=timedelta(seconds=SCAN_INTERVAL),
         )
 
     @property
@@ -78,45 +77,3 @@ class InelsDeviceUpdateCoordinator(DataUpdateCoordinator[Device]):
             self.update_interval = timedelta(seconds=SCAN_INTERVAL)
 
         return self.device
-
-
-class InelsDeviceUpdateCoordinator2(DataUpdateCoordinator[Device]):
-    """Coordinator to manage data for specific Inels devices."""
-
-    def __init__(self, hass: HomeAssistant, *, device: Device) -> None:
-        """Initialize device coordinator."""
-        self.device = device
-        self._exception: Exception | None = None
-
-        super().__init__(
-            hass,
-            LOGGER,
-            name=f"Update coordinator for {device})",
-            # update_interval=timedelta(seconds=SCAN_INTERVAL),
-        )
-
-    async def _async_update_data(self):
-        try:
-            if self._exception:
-                exc = self._exception
-                self._exception = None
-                raise exc
-        except Exception as err:
-            raise UpdateFailed(f"Error communicating with broker: {err}.") from err
-
-        if not self.data or not self.last_update_success:
-            try:
-                await self.hass.async_add_executor_job(self.device.get_value)
-            except Exception as err:
-                raise UpdateFailed(f"Error communicating with broker: {err}.") from err
-
-            # reset update interval
-            self.update_interval = timedelta(seconds=SCAN_INTERVAL)
-
-        LOGGER.warning("Async update data - Inels Device Update Coordinator 2")
-        # LOGGER.warning(self.device.__values.__state.__inels_status_value)
-        return self.device
-
-    @property
-    def type(self) -> str:
-        """Type of the coordinator entity."""

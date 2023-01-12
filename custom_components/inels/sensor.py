@@ -33,6 +33,7 @@ from inelsmqtt.const import (
     TI3_60M,
     IDRT3_1,
     GBP3_60,
+    RC3_610DALI,
 )
 from inelsmqtt.devices import Device
 
@@ -46,7 +47,13 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, TEMP_CELSIUS, Platform
+from homeassistant.const import (
+    PERCENTAGE,
+    LIGHT_LUX,
+    UnitOfTemperature,
+    UnitOfElectricPotential,
+    Platform,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -59,6 +66,7 @@ from .const import (
     ICON_HUMIDITY,
     ICON_DEW_POINT,
     ICON_LIGHT_IN,
+    ICON_FLASH,
 )
 
 bus_devices = [
@@ -83,6 +91,7 @@ bus_devices = [
     GSB3_90SX,
     IDRT3_1,
     GBP3_60,
+    RC3_610DALI,
 ]
 
 
@@ -229,7 +238,7 @@ SENSOR_DESCRIPTION_TEMPERATURE: "tuple[InelsSensorEntityDescription, ...]" = (
         name="Temperature In",
         device_class=SensorDeviceClass.TEMPERATURE,
         icon=ICON_TEMPERATURE,
-        native_unit_of_measurement=TEMP_CELSIUS,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,  # TEMP_CELSIUS,
         value=__get_temperature_in,
     ),
     InelsSensorEntityDescription(
@@ -237,7 +246,7 @@ SENSOR_DESCRIPTION_TEMPERATURE: "tuple[InelsSensorEntityDescription, ...]" = (
         name="Temperature Out",
         device_class=SensorDeviceClass.TEMPERATURE,
         icon=ICON_TEMPERATURE,
-        native_unit_of_measurement=TEMP_CELSIUS,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         value=__get_temperature_out,
     ),
 )
@@ -266,7 +275,7 @@ async def async_setup_entry(
                             key="temp_in",
                             name="Temperature",
                             icon=ICON_TEMPERATURE,
-                            native_unit_of_measurement=TEMP_CELSIUS,
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
                             var="temp_in",
                         ),
                     )
@@ -279,7 +288,7 @@ async def async_setup_entry(
                             key="temp_out",
                             name="External temperature sensor",
                             icon=ICON_TEMPERATURE,
-                            native_unit_of_measurement=TEMP_CELSIUS,
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
                             var="temp_out",
                         ),
                     )
@@ -292,7 +301,7 @@ async def async_setup_entry(
                             key="light_in",
                             name="Light intensity",
                             icon=ICON_LIGHT_IN,
-                            native_unit_of_measurement="lux",
+                            native_unit_of_measurement=LIGHT_LUX,
                             var="light_in",
                         ),
                     )
@@ -305,7 +314,7 @@ async def async_setup_entry(
                             key="ain",
                             name="Analog temperature",
                             icon=ICON_TEMPERATURE,
-                            native_unit_of_measurement=TEMP_CELSIUS,
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
                             var="ain",
                         ),
                     )
@@ -331,7 +340,7 @@ async def async_setup_entry(
                             key="dewpoint",
                             name="Dew point",
                             icon=ICON_DEW_POINT,
-                            native_unit_of_measurement=TEMP_CELSIUS,
+                            native_unit_of_measurement=UnitOfTemperature.CELSIUS,
                             var="dewpoint",
                         ),
                     )
@@ -342,11 +351,26 @@ async def async_setup_entry(
                         InelsBusSensor(
                             device,
                             InelsBusSensorDescription(
-                                key="temp",
+                                key=f"temp{k}",
                                 name="Temperature",
                                 icon=ICON_TEMPERATURE,
-                                native_unit_of_measurement=TEMP_CELSIUS,
+                                native_unit_of_measurement=UnitOfTemperature.CELSIUS,
                                 var="temps",
+                                index=k,
+                            ),
+                        )
+                    )
+            if "ains" in val.ha_value.__dict__:
+                for k, v in enumerate(val.ha_value.ains):
+                    entities.append(
+                        InelsBusSensor(
+                            device,
+                            InelsBusSensorDescription(
+                                key=f"ain{k}",
+                                name="Analog input",
+                                icon=ICON_FLASH,
+                                native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+                                var="ains",
                                 index=k,
                             ),
                         )
@@ -384,9 +408,9 @@ class InelsSensor(InelsBaseEntity, SensorEntity):
             self._attr_unique_id += f"-{self.entity_description.index}"
 
         if description.name:
-            self._attr_name = f"{self._attr_name}-{description.name}"
+            self._attr_name = f"{self._attr_name} {description.name}"
             if self.entity_description.index is not None:
-                self._attr_name += f"-{self.entity_description.index}"
+                self._attr_name += f" {self.entity_description.index + 1}"
 
         self._attr_native_value = self.entity_description.value(self._device)
 
@@ -417,7 +441,7 @@ class InelsBusSensor(InelsBaseEntity, SensorEntity):
         if description.name:
             self._attr_name = f"{self._attr_name}-{description.name}"
             if self.entity_description.index is not None:
-                self._attr_name += f"-{self.entity_description.index}"
+                self._attr_name += f" {self.entity_description.index}"
 
         if self.entity_description.index is not None:
             self._attr_native_value = _process_value(

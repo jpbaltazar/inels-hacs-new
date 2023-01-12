@@ -46,8 +46,8 @@ from .const import DEVICES, DOMAIN, ICON_BUTTON, ICON_PLUS, ICON_MINUS
 class InelsButtonDescription(ButtonEntityDescription):
     """A class that describes button entity."""
 
-    var: str = None  # sw, din...
-    index: int = None  # 1, 2, 3, 4...
+    var: str = None
+    index: int = None
 
 
 supported_devices = [
@@ -91,11 +91,10 @@ async def async_setup_entry(
                         InelsBusButton(
                             device=device,
                             description=InelsButtonDescription(
-                                key=f"{k+1}",  # starts counting at 1
-                                name=f"DIN {k+1}",
+                                key=f"{k+1}",
+                                name=f"Digital input {k+1}",
                                 icon=ICON_BUTTON,
                                 entity_category=EntityCategory.CONFIG,
-                                # only if needed
                                 var="din",
                                 index=k,
                             ),
@@ -107,8 +106,8 @@ async def async_setup_entry(
                         InelsBusButton(
                             device=device,
                             description=InelsButtonDescription(
-                                key=f"{k+1}",  # starts counting at 1
-                                name=f"SW {k+1}",
+                                key=f"{k+1}",
+                                name=f"Switch {k+1}",
                                 icon=ICON_BUTTON,
                                 entity_category=EntityCategory.CONFIG,
                                 # only if needed
@@ -123,11 +122,10 @@ async def async_setup_entry(
                         InelsBusButton(
                             device=device,
                             description=InelsButtonDescription(
-                                key=f"{k+1}",  # starts counting at 1
+                                key=f"{k+1}",
                                 name="Plus" if k == 0 else "Minus",
                                 icon=ICON_PLUS if k == 0 else ICON_MINUS,
                                 entity_category=EntityCategory.CONFIG,
-                                # only if needed
                                 var="plusminus",
                                 index=k,
                             ),
@@ -143,7 +141,7 @@ async def async_setup_entry(
                             device=device,
                             description=InelsButtonDescription(
                                 key=f"{index}",
-                                name=f"btn {index}",
+                                name=f"Button {index}",
                                 icon=ICON_BUTTON,
                                 entity_category=EntityCategory.CONFIG,
                             ),
@@ -158,7 +156,7 @@ class InelsButton(InelsBaseEntity, ButtonEntity):
     """Button switch can be toggled using with MQTT."""
 
     entity_description: InelsButtonDescription
-    _attr_device_class: ButtonDeviceClass = None  # ButtonDeviceClass.RESTART
+    _attr_device_class: ButtonDeviceClass = None
 
     def __init__(self, device: Device, description: InelsButtonDescription) -> None:
         """Initialize a button."""
@@ -168,18 +166,15 @@ class InelsButton(InelsBaseEntity, ButtonEntity):
         self._attr_unique_id = f"{self._attr_unique_id}-{description.key}"
 
         if description.name:
-            self._attr_name = f"{self._attr_name}-{description.name}"
+            self._attr_name = f"{self._attr_name} {description.name}"
 
     def _callback(self, new_value: Any) -> None:
         super()._callback(new_value)
-        # self.__process_state()
         entity_id = f"{Platform.BUTTON}.{self._device_id}_btn_{self._device.values.ha_value.number}"
 
         if (
             self._device.values.ha_value.pressing
             and self._device.values.ha_value.number == int(self.entity_description.key)
-            # the original implementation didn't have to worry about this ^ because
-            # the callbacks all went to the last entity added for the device
         ):
             self.hass.services.call(
                 Platform.BUTTON,
@@ -223,11 +218,10 @@ class InelsBusButton(InelsBaseEntity, ButtonEntity):
         if (
             curr_val.__dict__[self.entity_description.var][
                 self.entity_description.index
-            ]  # is on
+            ]
             and not last_val.__dict__[self.entity_description.var][
                 self.entity_description.index
-            ]  # was off
-            # on press
+            ]
         ):
             self.hass.services.call(
                 Platform.BUTTON,

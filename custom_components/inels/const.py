@@ -34,6 +34,7 @@ ICON_MINUS = "mdi:minus"
 ICON_ALERT = "mdi:alert"
 ICON_PROXIMITY = "mdi:contactless-payment"
 ICON_BINARY_INPUT = "mdi:ab-testing"
+ICON_FLASH = "mdi:flash"
 
 ICON_WATER_HEATER_DICT = {
     "on": "mdi:valve-open",
@@ -59,3 +60,12 @@ MANUAL_SETUP = "manual"
 
 BUTTON_PRESS_STATE = "press"
 BUTTON_NO_ACTION_STATE = "no_action"
+
+FAN_SPEED_OPTIONS: list[str] = ["Off", "Speed 1", "Speed 2", "Speed 3"]
+FAN_SPEED_DICT = {}
+
+SELECT_OPTIONS_DICT = {
+    "fan_speed": FAN_SPEED_OPTIONS,
+}
+
+SELECT_DICT = {"fan_speed": FAN_SPEED_DICT}

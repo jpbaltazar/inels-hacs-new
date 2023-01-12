@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, cast
 from dataclasses import dataclass
 
-from inelsmqtt.const import RFDAC_71B, DA3_22M, DA3_66M  # HERE ?
+from inelsmqtt.const import RFDAC_71B, DA3_22M, DA3_66M, RC3_610DALI  # HERE ?
 from inelsmqtt.devices import Device
 
 from homeassistant.components.light import (
@@ -19,10 +19,10 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 
 from .base_class import InelsBaseEntity
-from .const import DEVICES, DOMAIN, ICON_LIGHT
+from .const import DEVICES, DOMAIN, ICON_LIGHT, ICON_FLASH, LOGGER
 
 
-bus_lights = [DA3_22M, DA3_66M]
+bus_lights = [DA3_22M, DA3_66M, RC3_610DALI]
 
 
 async def async_setup_entry(
@@ -34,25 +34,52 @@ async def async_setup_entry(
     device_list: "list[Device]" = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
 
     entities = []
-
     for device in device_list:
-        if device.device_type == Platform.LIGHT:
-            if device.inels_type in bus_lights:
-                dev_val = device.get_value()
-                if "out" in device.get_value().ha_value.__dict__:
-                    out_len = len(dev_val.ha_value.out)
-                    for k, v in enumerate(dev_val.ha_value.out):
-                        entities.append(
-                            InelsLightChannel(
-                                device,
-                                description=InelsLightChannelDescription(
-                                    out_len,
-                                    k,
-                                ),
-                            )
+        if device.inels_type in bus_lights:
+            dev_val = device.get_value()
+            if "out" in dev_val.ha_value.__dict__:
+                out_len = len(dev_val.ha_value.out)
+                for k, v in enumerate(dev_val.ha_value.out):
+                    entities.append(
+                        InelsLightChannel(
+                            device,
+                            description=InelsLightChannelDescription(
+                                out_len,
+                                k,
+                                ICON_LIGHT,
+                                "out",
+                                "light",
+                            ),
                         )
-            else:
-                entities.append(InelsLight(device))
+                    )
+            if "dali" in dev_val.ha_value.__dict__:
+                out_len = len(dev_val.ha_value.dali)
+                for k, v in enumerate(dev_val.ha_value.dali):
+                    entities.append(
+                        InelsLightChannel(
+                            device,
+                            description=InelsLightChannelDescription(
+                                out_len,
+                                k,
+                                ICON_LIGHT,
+                                "dali",
+                                "DALI",
+                            ),
+                        )
+                    )
+            if "aout" in dev_val.ha_value.__dict__:
+                out_len = len(dev_val.ha_value.aout)
+                for k, v in enumerate(dev_val.ha_value.aout):
+                    entities.append(
+                        InelsLightChannel(
+                            device,
+                            description=InelsLightChannelDescription(
+                                out_len, k, ICON_FLASH, "aout", "Analog output"
+                            ),
+                        )
+                    )
+        elif device.device_type == Platform.LIGHT:
+            entities.append(InelsLight(device))
 
     async_add_entities(entities)
 
@@ -111,15 +138,24 @@ class InelsLight(InelsBaseEntity, LightEntity):
                 self._device.set_ha_value, brightness
             )
         else:
-            await self.hass.async_add_executor_job(self._device.set_ha_value, 100)
+            last_val = self._device.last_values.ha_value
+            brightness = 100 if last_val == 0 else last_val
+            await self.hass.async_add_executor_job(
+                self._device.set_ha_value, brightness
+            )
 
 
 class InelsLightChannelDescription:
     """Inels light channel description."""
 
-    def __init__(self, channel_number: int, channel_index: int):
+    def __init__(
+        self, channel_number: int, channel_index: int, icon: str, var: str, name: str
+    ):
         self.channel_number = channel_number
         self.channel_index = channel_index
+        self.icon = icon
+        self.var = var
+        self.name = name
 
 
 class InelsLightChannel(InelsBaseEntity, LightEntity):
@@ -134,31 +170,67 @@ class InelsLightChannel(InelsBaseEntity, LightEntity):
         super().__init__(device=device)
         self._entity_description = description
 
-        self._attr_unique_id = f"{self._attr_unique_id}-{description.channel_index}"
-        self._attr_name = f"{self._attr_name}-{description.channel_index}"
+        self._attr_unique_id = (
+            f"{self._attr_unique_id}-{description.name}-{description.channel_index}"
+        )
+        self._attr_name = (
+            f"{self._attr_name} {description.name} {description.channel_index}"
+        )
 
         self._attr_supported_color_modes: set[ColorMode] = set()
         if self._device.inels_type in bus_lights:
             self._attr_supported_color_modes.add(ColorMode.BRIGHTNESS)
 
     @property
+    def available(self) -> bool:
+        """If it is available"""
+        if self._entity_description.var == "out":
+            if "toa" in self._device.state.__dict__:
+                if self._device.state.toa[self._entity_description.channel_index]:
+                    LOGGER.warning("Thermal overload on light %s", self.name)
+                    return False
+            if "coa" in self._device.state.__dict__:
+                if self._device.state.coa[self._entity_description.channel_index]:
+                    LOGGER.warning("Current overload on light %s", self.name)
+                    return False
+        elif self._entity_description.var == "dali":
+            if "alert_dali_power" in self._device.state.__dict__:
+                if self._device.state.alert_dali_power:
+                    LOGGER.warning("Alert dali power")
+                    return False
+            if "alert_dali_communication" in self._device.state.__dict__:
+                if self._device.state.alert_dali_communication:
+                    LOGGER.warning("Alert dali communication")
+                    return False
+
+        return super().available
+
+    @property
     def is_on(self) -> bool:
         """Return true if light is on."""
-        return self._device.state.out[self._entity_description.channel_index] > 0
+        return (
+            self._device.state.__dict__[self._entity_description.var][
+                self._entity_description.channel_index
+            ]
+            > 0
+        )
 
     @property
     def icon(self) -> str | None:
         """Light icon."""
-        return ICON_LIGHT
+        return self._entity_description.icon
 
     @property
     def brightness(self) -> int | None:
         """Light brightness."""
         if self._device.inels_type not in bus_lights:
             return None
-        # return cast(int, self._device.get_value().out[self.entity_description.channel_index])
         return cast(
-            int, self._device.state.out[self._entity_description.channel_index] * 2.55
+            int,
+            self._device.state.__dict__[self._entity_description.var][
+                self._entity_description.channel_index
+            ]
+            * 2.55,
         )
 
     async def async_turn_off(self, **kwargs: Any) -> None:
@@ -173,7 +245,9 @@ class InelsLightChannel(InelsBaseEntity, LightEntity):
         else:
             # mount device ha value
             ha_val = self._device.get_value().ha_value
-            ha_val.out[self._entity_description.channel_index] = 0
+            ha_val.__dict__[self._entity_description.var][
+                self._entity_description.channel_index
+            ] = 0
             await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
@@ -186,11 +260,28 @@ class InelsLightChannel(InelsBaseEntity, LightEntity):
             brightness = min(brightness, 100)
 
             ha_val = self._device.get_value().ha_value
-            ha_val.out[self._entity_description.channel_index] = brightness
+            ha_val.__dict__[self._entity_description.var][
+                self._entity_description.channel_index
+            ] = brightness
 
             await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
         else:
             ha_val = self._device.get_value().ha_value
-            ha_val.out[self._entity_description.channel_index] = 100
+
+            last_val = self._device.last_values.ha_value
+
+            # uses previously observed value if it isn't 0
+            ha_val.__dict__[self._entity_description.var][
+                self._entity_description.channel_index
+            ] = (
+                100
+                if last_val.__dict__[self._entity_description.var][
+                    self._entity_description.channel_index
+                ]
+                == 0
+                else last_val.__dict__[self._entity_description.var][
+                    self._entity_description.channel_index
+                ]
+            )
 
             await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)

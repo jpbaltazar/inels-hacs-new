@@ -77,7 +77,6 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_PASSWORD: user_input.get(CONF_PASSWORD),
                         MQTT_TRANSPORT: user_input.get(MQTT_TRANSPORT),
                         CONF_DISCOVERY: True,
-                        # MQTT_TIMEOUT: CONNECTION_TIMEOUT,
                     },
                 )
 

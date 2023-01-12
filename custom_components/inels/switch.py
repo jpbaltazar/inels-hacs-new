@@ -16,6 +16,7 @@ from inelsmqtt.const import (
     SA3_04M,
     SA3_06M,
     SA3_012M,
+    RC3_610DALI,
 )
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
@@ -43,14 +44,21 @@ async def async_setup_entry(
                 entities.append(InelsSwitch(device=device))
             elif device.inels_type == SA3_01B:
                 entities.append(InelsSwitch(device=device))
-            elif device.inels_type in [SA3_02B, SA3_02M, SA3_04M, SA3_06M, SA3_012M]:
+            elif device.inels_type in [
+                SA3_02B,
+                SA3_02M,
+                SA3_04M,
+                SA3_06M,
+                SA3_012M,
+                RC3_610DALI,
+            ]:
                 for k, v in enumerate(device.state.re):
                     entities.append(
                         InelsBusSwitch(
                             device=device,
                             description=InelsSwitchEntityDescription(
                                 key=f"{k}",
-                                name=f"RE {k+1}",
+                                name=f"Relay {k+1}",
                                 icon=ICON_SWITCH,
                                 index=k,
                             ),
@@ -103,14 +111,6 @@ class InelsSwitch(InelsBaseEntity, SwitchEntity):
         ha_val.on = True
         await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
 
-    # def _callback(self, new_value: Any) -> None:
-    #    """Get callback data from the broker."""
-    #    super()._callback(new_value)
-    #    if self._state_attrs is not None:
-    #    if isinstance(self._device.state, bool) is False:
-    #        self._state_attrs[ATTR_TEMPERATURE] = self._device.state.temperature
-    #        self._state_attrs["on"] = self._device.state.on
-
 
 @dataclass
 class InelsSwitchEntityDescription(SwitchEntityDescription):
@@ -134,7 +134,22 @@ class InelsBusSwitch(InelsBaseEntity, SwitchEntity):
         self.entity_description = description
 
         self._attr_unique_id = f"{self._attr_unique_id}-{description.key}"
-        self._attr_name = f"{self._attr_name}-{description.name}"
+        self._attr_name = f"{self._attr_name} {description.name}"
+
+    @property
+    def available(self) -> bool:
+        if "relay_overflow" in self._device.state.__dict__:
+            if self._device.state.relay_overflow[self.entity_description.index]:
+                LOGGER.warning(
+                    "Relay overflow in relay %d of %d",
+                    self.entity_description.key,
+                    self._device_id,
+                )
+                return False
+            else:
+                return super().available
+        else:
+            return super().available
 
     @property
     def is_on(self) -> bool | None:

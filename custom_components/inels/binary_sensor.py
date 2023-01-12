@@ -163,11 +163,6 @@ class InelsBinarySensor(InelsBaseEntity, BinarySensorEntity):
 
         self._attr_name = f"{self._attr_name}-{self.entity_description.name}"
 
-    # def _callback(self, new_value: Any) -> None:
-    #    """Refresh data for device"""
-    #    super()._callback(new_value)
-    #       self._attr_native_value = self.entity_description.value(self._device)
-
     @property
     def unique_id(self) -> str | None:
         return super().unique_id
