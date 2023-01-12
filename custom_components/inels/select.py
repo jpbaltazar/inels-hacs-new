@@ -110,17 +110,18 @@ class InelsSelect(InelsBaseEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         """Change the selected option."""
 
-        if str(self.entity_description.var) in SELECT_DICT:
-            dict = SELECT_DICT[self.entity_description.var]
-            if option in dict:
-                val = dict[option]
-                if "index" in self.entity_description.__dict__:
-                    if option in dict:
-                        self._device.state.__dict__[self.entity_description.var][
-                            self.entity_description.index
-                        ] = val
-                else:
-                    if option in dict:
-                        self._device.state.__dict__[self.entity_description.var] = dict[
-                            option
-                        ] = val
+        if "RF" not in self._device.inels_type:
+            if str(self.entity_description.var) in SELECT_DICT:
+                dict = SELECT_DICT[self.entity_description.var]
+                if option in dict:
+                    val = dict[option]
+                    if "index" in self.entity_description.__dict__:
+                        if option in dict:
+                            self._device.state.__dict__[self.entity_description.var][
+                                self.entity_description.index
+                            ] = val
+                    else:
+                        if option in dict:
+                            self._device.state.__dict__[
+                                self.entity_description.var
+                            ] = dict[option] = val
