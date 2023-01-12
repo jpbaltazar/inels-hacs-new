@@ -34,6 +34,7 @@ from inelsmqtt.const import (
     IDRT3_1,
     GBP3_60,
     RC3_610DALI,
+    FA3_612M,
 )
 from inelsmqtt.devices import Device
 
@@ -92,6 +93,7 @@ bus_devices = [
     IDRT3_1,
     GBP3_60,
     RC3_610DALI,
+    FA3_612M,
 ]
 
 
@@ -439,9 +441,9 @@ class InelsBusSensor(InelsBaseEntity, SensorEntity):
             self._attr_unique_id += f"-{self.entity_description.index}"
 
         if description.name:
-            self._attr_name = f"{self._attr_name}-{description.name}"
+            self._attr_name = f"{self._attr_name} {description.name}"
             if self.entity_description.index is not None:
-                self._attr_name += f" {self.entity_description.index}"
+                self._attr_name += f" {self.entity_description.index + 1}"
 
         if self.entity_description.index is not None:
             self._attr_native_value = _process_value(

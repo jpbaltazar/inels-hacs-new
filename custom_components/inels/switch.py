@@ -17,6 +17,7 @@ from inelsmqtt.const import (
     SA3_06M,
     SA3_012M,
     RC3_610DALI,
+    FA3_612M,
 )
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
@@ -52,12 +53,24 @@ async def async_setup_entry(
                 SA3_012M,
                 RC3_610DALI,
             ]:
+                if len(device.state.re) == 1:
+                    entities.append(
+                        InelsBusSwitch(
+                            device=device,
+                            description=InelsSwitchEntityDescription(
+                                key="re",
+                                name="Relay",
+                                icon=ICON_SWITCH,
+                                index=0,
+                            ),
+                        )
+                    )
                 for k, v in enumerate(device.state.re):
                     entities.append(
                         InelsBusSwitch(
                             device=device,
                             description=InelsSwitchEntityDescription(
-                                key=f"{k}",
+                                key=f"re{k}",
                                 name=f"Relay {k+1}",
                                 icon=ICON_SWITCH,
                                 index=k,

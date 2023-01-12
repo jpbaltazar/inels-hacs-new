@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, cast
 from dataclasses import dataclass
 
-from inelsmqtt.const import RFDAC_71B, DA3_22M, DA3_66M, RC3_610DALI  # HERE ?
+from inelsmqtt.const import RFDAC_71B, DA3_22M, DA3_66M, RC3_610DALI, FA3_612M
 from inelsmqtt.devices import Device
 
 from homeassistant.components.light import (
@@ -22,7 +22,7 @@ from .base_class import InelsBaseEntity
 from .const import DEVICES, DOMAIN, ICON_LIGHT, ICON_FLASH, LOGGER
 
 
-bus_lights = [DA3_22M, DA3_66M, RC3_610DALI]
+bus_lights = [DA3_22M, DA3_66M, RC3_610DALI, FA3_612M]
 
 
 async def async_setup_entry(
@@ -174,7 +174,7 @@ class InelsLightChannel(InelsBaseEntity, LightEntity):
             f"{self._attr_unique_id}-{description.name}-{description.channel_index}"
         )
         self._attr_name = (
-            f"{self._attr_name} {description.name} {description.channel_index}"
+            f"{self._attr_name} {description.name} {description.channel_index + 1}"
         )
 
         self._attr_supported_color_modes: set[ColorMode] = set()

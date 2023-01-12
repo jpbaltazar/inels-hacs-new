@@ -1,7 +1,10 @@
 """Inels selector entity."""
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
+
 
 from inelsmqtt.devices import Device
 from inelsmqtt.const import (
@@ -23,7 +26,8 @@ from .const import (
     DEVICES,
     DOMAIN,
     SELECT_OPTIONS_DICT,
-    SELECT_DICT,
+    SELECT_OPTIONS_ICON,
+    FAN_SPEED_DICT,
 )
 
 
@@ -38,8 +42,19 @@ class InelsSelectEntityDescription(
 ):
     """Class for describing the inels select entities"""
 
-    var: str = None
     index: int = None
+    var: str = None
+    value: Callable[[Device, str], Any | None] = None
+
+
+def __set_fan_speed(device: Device, option: str) -> Any | None:
+    """Process option value and set fan speed"""
+    ha_val = device.state
+
+    if option in FAN_SPEED_DICT:
+        ha_val.fan_speed = FAN_SPEED_DICT[option]
+
+    return ha_val
 
 
 async def async_setup_entry(
@@ -52,7 +67,7 @@ async def async_setup_entry(
     entities: "list[InelsSelect]" = []
 
     for device in device_list:
-        if "RF" not in device.inels_type:
+        if device.inels_type is FA3_612M:
             val = device.get_value()
             if "fan_speed" in val.ha_value.__dict__:
                 entities.append(
@@ -60,11 +75,13 @@ async def async_setup_entry(
                         device,
                         InelsSelectEntityDescription(
                             key="fan_speed",
-                            name="Fan speed",
                             var="fan_speed",
+                            name="Fan speed",
+                            value=__set_fan_speed,
                         ),
                     )
                 )
+    async_add_entities(entities, True)
 
 
 class InelsSelect(InelsBaseEntity, SelectEntity):
@@ -79,6 +96,15 @@ class InelsSelect(InelsBaseEntity, SelectEntity):
         super().__init__(device=device)
         self.entity_description = description
 
+        if self.entity_description.index is not None:
+            self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.var}-{self.entity_description.index}"
+            self._attr_name = f"{self._attr_name} {self.entity_description.name} {self.entity_description.index + 1}"
+        else:
+            self._attr_unique_id = (
+                f"{self._attr_unique_id}-{self.entity_description.var}"
+            )
+            self._attr_name = f"{self._attr_name} {self.entity_description.name}"
+
     @property
     def unique_id(self) -> str | None:
         return super().unique_id
@@ -88,9 +114,16 @@ class InelsSelect(InelsBaseEntity, SelectEntity):
         return super().name
 
     @property
+    def icon(self) -> str | None:
+        if self.entity_description.var in SELECT_OPTIONS_ICON:
+            return SELECT_OPTIONS_ICON[self.entity_description.var]
+        else:
+            return super().icon
+
+    @property
     def current_option(self) -> str | None:
         state = self._device.state
-        if "index" in self.entity_description.__dict__:
+        if self.entity_description.index is not None:
             return SELECT_OPTIONS_DICT[self.entity_description.var][
                 state.__dict__[self.entity_description.var][
                     self.entity_description.index
@@ -110,19 +143,6 @@ class InelsSelect(InelsBaseEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         """Change the selected option."""
+        new_ha_val = self.entity_description.value(self._device, option)
 
-        if "RF" not in self._device.inels_type:
-            if str(self.entity_description.var) in SELECT_DICT:
-                dict = SELECT_DICT[self.entity_description.var]
-                if option in dict:
-                    val = dict[option]
-                    if "index" in self.entity_description.__dict__:
-                        if option in dict:
-                            self._device.state.__dict__[self.entity_description.var][
-                                self.entity_description.index
-                            ] = val
-                    else:
-                        if option in dict:
-                            self._device.state.__dict__[
-                                self.entity_description.var
-                            ] = dict[option] = val
+        self.hass.async_add_executor_job(self._device.set_ha_value, new_ha_val)

@@ -33,6 +33,7 @@ from .const import (
     ICON_ALERT,
     ICON_PROXIMITY,
     ICON_BINARY_INPUT,
+    ICON_HEAT_WAVE,
     LOGGER,
 )
 
@@ -136,6 +137,19 @@ async def async_setup_entry(
                             ),
                         )
                     )
+            if "heating_out" in val.ha_value.__dict__:
+                entities.append(
+                    InelsBinaryInputSensor(
+                        device=device,
+                        description=InelsBinarySensorEntityDescription(
+                            key="heating_out",
+                            name="Heating output",
+                            icon=ICON_HEAT_WAVE,
+                            var="heating_out",
+                            array=False,
+                        ),
+                    )
+                )
     async_add_entities(entities, True)
 
 

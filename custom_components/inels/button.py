@@ -24,6 +24,8 @@ from inelsmqtt.const import (
     WSB3_40H,
     IDRT3_1,
     GBP3_60,
+    RC3_610DALI,
+    FA3_612M,
 )
 
 from homeassistant.components.button import (
@@ -69,6 +71,8 @@ supported_devices = [
     WSB3_40H,
     IDRT3_1,
     GBP3_60,
+    RC3_610DALI,
+    FA3_612M,
 ]
 
 
@@ -202,7 +206,7 @@ class InelsBusButton(InelsBaseEntity, ButtonEntity):
         self._attr_unique_id = f"{self._attr_unique_id}-{description.name}"
 
         if description.name:
-            self._attr_name = f"{self._attr_name}-{description.name}"
+            self._attr_name = f"{self._attr_name} {description.name}"
 
     def _callback(self, new_value: Any) -> None:
         super()._callback(new_value)
