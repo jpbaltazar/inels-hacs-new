@@ -52,18 +52,19 @@ async def async_setup_entry(
     entities: "list[InelsSelect]" = []
 
     for device in device_list:
-        val = device.get_value()
-        if "fan_speed" in val.ha_value.__dict__:
-            entities.append(
-                InelsSelect(
-                    device,
-                    InelsSelectEntityDescription(
-                        key="fan_speed",
-                        name="Fan speed",
-                        var="fan_speed",
-                    ),
+        if "RF" not in device.inels_type:
+            val = device.get_value()
+            if "fan_speed" in val.ha_value.__dict__:
+                entities.append(
+                    InelsSelect(
+                        device,
+                        InelsSelectEntityDescription(
+                            key="fan_speed",
+                            name="Fan speed",
+                            var="fan_speed",
+                        ),
+                    )
                 )
-            )
 
 
 class InelsSelect(InelsBaseEntity, SelectEntity):
