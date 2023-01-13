@@ -22,7 +22,6 @@ from homeassistant.components.binary_sensor import (
 )
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -150,6 +149,7 @@ async def async_setup_entry(
                         ),
                     )
                 )
+
     async_add_entities(entities, True)
 
 
@@ -211,7 +211,7 @@ class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
 
         self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.var}-{self.entity_description.index}"  # TODO make sure it doesn't need more info
 
-        self._attr_name = f"{self._attr_name}-{self.entity_description.name}-{self.entity_description.index +1 }"
+        self._attr_name = f"{self._attr_name} {self.entity_description.name} {self.entity_description.index +1 }"
 
     @property
     def available(self) -> bool:

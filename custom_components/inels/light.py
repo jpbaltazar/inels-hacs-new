@@ -173,6 +173,7 @@ class InelsLightChannel(InelsBaseEntity, LightEntity):
         self._attr_unique_id = (
             f"{self._attr_unique_id}-{description.name}-{description.channel_index}"
         )
+
         self._attr_name = (
             f"{self._attr_name} {description.name} {description.channel_index + 1}"
         )

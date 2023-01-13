@@ -67,12 +67,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await hass.async_add_executor_job(mqtt.close)
         raise ConfigEntryNotReady from exc
 
-    LOGGER.info("Finished discovery, setting up platform.")
+    LOGGER.info("Finished discovery, setting up platforms")
 
     hass.data[DOMAIN][entry.entry_id] = inels_data
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
-    LOGGER.info("Platform setup complete.")
+    LOGGER.info("Platform setup complete")
 
     return True
 
@@ -90,7 +90,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     broker.unsubscribe_listeners()
     broker.disconnect()
 
-    hass.data[DOMAIN].pop(entry.entry_id)
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok:
+        hass.data[DOMAIN].pop(entry.entry_id)
+
     if not hass.data[DOMAIN]:
         hass.data.pop(DOMAIN)
 
