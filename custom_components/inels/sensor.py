@@ -1,4 +1,4 @@
-"""Inels sensor entity."""
+"""iNELS sensor entity."""
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -6,41 +6,37 @@ from dataclasses import dataclass
 from operator import itemgetter
 from typing import Any
 
-from inelsmqtt.const import (
-    # Data types
+from inelsmqtt.const import (  # Data types
     BATTERY,
-    TEMP_IN,
-    TEMP_OUT,
-    RFTI_10B,
-    SA3_01B,
     DA3_22M,
+    DMD3_1,
+    FA3_612M,
+    GBP3_60,
     GRT3_50,
     GSB3_20SX,
     GSB3_40SX,
     GSB3_60SX,
     GSB3_90SX,
-    WSB3_20H,
-    WSB3_40H,
-    WSB3_20,
-    WSB3_40,
-    SA3_02B,
+    IDRT3_1,
     IM3_20B,
     IM3_40B,
     IM3_80B,
-    DMD3_1,
+    INELS_DEVICE_TYPE_DATA_STRUCT_DATA,
+    RC3_610DALI,
+    RFTI_10B,
+    SA3_01B,
+    SA3_02B,
+    TEMP_IN,
+    TEMP_OUT,
     TI3_10B,
     TI3_40B,
     TI3_60M,
-    IDRT3_1,
-    GBP3_60,
-    RC3_610DALI,
-    FA3_612M,
+    WSB3_20,
+    WSB3_20H,
+    WSB3_40,
+    WSB3_40H,
 )
 from inelsmqtt.devices import Device
-
-from inelsmqtt.const import (
-    INELS_DEVICE_TYPE_DATA_STRUCT_DATA,
-)
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -49,11 +45,11 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    PERCENTAGE,
     LIGHT_LUX,
-    UnitOfTemperature,
-    UnitOfElectricPotential,
+    PERCENTAGE,
     Platform,
+    UnitOfElectricPotential,
+    UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -63,11 +59,11 @@ from .const import (
     DEVICES,
     DOMAIN,
     ICON_BATTERY,
-    ICON_TEMPERATURE,
-    ICON_HUMIDITY,
     ICON_DEW_POINT,
-    ICON_LIGHT_IN,
     ICON_FLASH,
+    ICON_HUMIDITY,
+    ICON_LIGHT_IN,
+    ICON_TEMPERATURE,
 )
 
 bus_devices = [
@@ -108,10 +104,10 @@ class InelsSensorEntityDescriptionMixin:
 class InelsSensorEntityDescription(
     SensorEntityDescription, InelsSensorEntityDescriptionMixin
 ):
-    """Class for describing inels entities."""
+    """Class for describing iNELS entities."""
 
-    var: str = None
-    index: int = None
+    var: str | None = None
+    index: int | None = None
 
 
 @dataclass
@@ -123,10 +119,10 @@ class InelsBusSensorDescriptionMixin:
 class InelsBusSensorDescription(
     SensorEntityDescription, InelsBusSensorDescriptionMixin
 ):
-    """Class for describing inels entities."""
+    """Class for describing iNELS entities."""
 
-    var: str = None
-    index: int = None
+    var: str | None = None
+    index: int | None = None
 
 
 def _process_data(data: str, indexes: list) -> str:
@@ -152,22 +148,21 @@ def _process_value(val: str) -> str:
         last = val[-1]
         if last == "9":
             return "Sensor not communicating"
-        elif last == "A":
+        if last == "A":
             return "Sensor not calibrated"
-        elif last == "B":
+        if last == "B":
             return "No value"
-        elif last == "C":
+        if last == "C":
             return "Sensor not configured"
-        elif last == "D":
+        if last == "D":
             return "Sensor value out of range"
-        elif last == "E":
+        if last == "E":
             return "Sensor measurement error"
-        elif last == "F":
+        if last == "F":
             return "No sensor connected"
-        else:
-            return "ERROR"
-    else:
-        return f"{float(int(val, 16))/100}"
+        return "ERROR"
+
+    return f"{float(int(val, 16))/100}"
 
 
 def __get_battery_level(device: Device) -> int | None:
@@ -226,7 +221,7 @@ def __get_temperature_out(device: Device) -> float | None:
 
 # RFTI_10B
 
-SENSOR_DESCRIPTION_TEMPERATURE: "tuple[InelsSensorEntityDescription, ...]" = (
+SENSOR_DESCRIPTION_TEMPERATURE: tuple[InelsSensorEntityDescription, ...] = (
     InelsSensorEntityDescription(
         key="battery_level",
         name="Battery",
@@ -259,14 +254,12 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Load Inels switch.."""
-    device_list: "list[Device]" = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
+    """Load iNELS switch.."""
+    device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
 
-    entities = []
+    entities: list[InelsBaseEntity] = []
 
     for device in device_list:
-        descriptions = None
-
         if device.inels_type in bus_devices:
             val = device.get_value()
             if "temp_in" in val.ha_value.__dict__:
@@ -348,7 +341,7 @@ async def async_setup_entry(
                     )
                 )
             if "temps" in val.ha_value.__dict__:
-                for k, v in enumerate(val.ha_value.temps):
+                for k in range(len(val.ha_value.temps)):
                     entities.append(
                         InelsBusSensor(
                             device,
@@ -363,7 +356,7 @@ async def async_setup_entry(
                         )
                     )
             if "ains" in val.ha_value.__dict__:
-                for k, v in enumerate(val.ha_value.ains):
+                for k in range(len(val.ha_value.ains)):
                     entities.append(
                         InelsBusSensor(
                             device,
@@ -378,7 +371,7 @@ async def async_setup_entry(
                         )
                     )
         else:
-            descriptions = []
+            descriptions: tuple[InelsSensorEntityDescription, ...]
 
             if device.device_type == Platform.SENSOR:
                 if device.inels_type == RFTI_10B:
@@ -423,7 +416,7 @@ class InelsSensor(InelsBaseEntity, SensorEntity):
 
 
 class InelsBusSensor(InelsBaseEntity, SensorEntity):
-    """Platform class for Home assistant, bus version"""
+    """Platform class for Home assistant, bus version."""
 
     entity_description: InelsBusSensorDescription
 
@@ -432,7 +425,7 @@ class InelsBusSensor(InelsBaseEntity, SensorEntity):
         device: Device,
         description: InelsBusSensorDescription,
     ) -> None:
-        """Initialize bus sensor"""
+        """Initialize bus sensor."""
         super().__init__(device=device)
 
         self.entity_description = description

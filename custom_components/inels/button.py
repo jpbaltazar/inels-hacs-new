@@ -4,29 +4,29 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from inelsmqtt.devices import Device
 from inelsmqtt.const import (
-    GRT3_50,
     DA3_22M,
+    DA3_66M,
+    FA3_612M,
+    GBP3_60,
+    GRT3_50,
     GSB3_20SX,
     GSB3_40SX,
     GSB3_60SX,
     GSB3_90SX,
+    IDRT3_1,
+    RC3_610DALI,
     SA3_02B,
     SA3_02M,
     SA3_04M,
     SA3_06M,
     SA3_012M,
-    WSB3_20H,
-    DA3_66M,
     WSB3_20,
+    WSB3_20H,
     WSB3_40,
     WSB3_40H,
-    IDRT3_1,
-    GBP3_60,
-    RC3_610DALI,
-    FA3_612M,
 )
+from inelsmqtt.devices import Device
 
 from homeassistant.components.button import (
     SERVICE_PRESS,
@@ -41,15 +41,15 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_class import InelsBaseEntity
-from .const import DEVICES, DOMAIN, ICON_BUTTON, ICON_PLUS, ICON_MINUS
+from .const import DEVICES, DOMAIN, ICON_BUTTON, ICON_MINUS, ICON_PLUS
 
 
 @dataclass
 class InelsButtonDescription(ButtonEntityDescription):
     """A class that describes button entity."""
 
-    var: str = None
-    index: int = None
+    var: str | None = None
+    index: int | None = None
 
 
 supported_devices = [
@@ -81,16 +81,16 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Load Inels buttons from config entry."""
-    device_list: "list[Device]" = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
+    """Load iNELS buttons from config entry."""
+    device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
 
-    entities = []
+    entities: list[InelsBaseEntity] = []
 
     for device in device_list:
         if device.inels_type in supported_devices:
             val = device.get_value()
             if "din" in val.ha_value.__dict__:
-                for k, v in enumerate(val.ha_value.din):
+                for k in range(len(val.ha_value.din)):
                     entities.append(
                         InelsBusButton(
                             device=device,
@@ -105,7 +105,7 @@ async def async_setup_entry(
                         )
                     )
             if "sw" in val.ha_value.__dict__:
-                for k, v in enumerate(val.ha_value.sw):
+                for k in range(len(val.ha_value.sw)):
                     entities.append(
                         InelsBusButton(
                             device=device,
@@ -121,7 +121,7 @@ async def async_setup_entry(
                         )
                     )
             if "plusminus" in val.ha_value.__dict__:
-                for k, v in enumerate(val.ha_value.plusminus):
+                for k in range(len(val.ha_value.plusminus)):
                     entities.append(
                         InelsBusButton(
                             device=device,
@@ -160,7 +160,7 @@ class InelsButton(InelsBaseEntity, ButtonEntity):
     """Button switch can be toggled using with MQTT."""
 
     entity_description: InelsButtonDescription
-    _attr_device_class: ButtonDeviceClass = None
+    _attr_device_class: ButtonDeviceClass | None = None
 
     def __init__(self, device: Device, description: InelsButtonDescription) -> None:
         """Initialize a button."""
@@ -196,10 +196,10 @@ class InelsBusButton(InelsBaseEntity, ButtonEntity):
     """Button switch that can be toggled by MQTT. Specific version for Bus devices."""
 
     entity_description: InelsButtonDescription
-    _attr_device_class: ButtonDeviceClass = None
+    _attr_device_class: ButtonDeviceClass | None = None
 
     def __init__(self, device: Device, description: InelsButtonDescription) -> None:
-        """Initialize button"""
+        """Initialize button."""
         super().__init__(device=device)
         self.entity_description = description
 

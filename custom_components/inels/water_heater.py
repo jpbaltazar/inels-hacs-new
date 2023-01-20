@@ -12,7 +12,7 @@ from homeassistant.components.water_heater import (
     WaterHeaterEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_TEMPERATURE, STATE_ON, TEMP_CELSIUS, Platform
+from homeassistant.const import ATTR_TEMPERATURE, STATE_ON, Platform, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -41,8 +41,8 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Load Inels water heater from config entry."""
-    device_list: "list[Device]" = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
+    """Load iNELS water heater from config entry."""
+    device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
 
     async_add_entities(
         [
@@ -62,7 +62,7 @@ class InelsWaterHeater(InelsBaseEntity, WaterHeaterEntity):
         """Initialize a water heater."""
         super().__init__(device=device)
 
-        self._attr_temperature_unit = TEMP_CELSIUS
+        self._attr_temperature_unit = UnitOfTemperature.CELSIUS
         self._attr_operation_list = OPERATION_LIST
         self._attr_min_temp = DEFAULT_MIN_TEMP
         self._attr_max_temp = DEFAULT_MAX_TEMP

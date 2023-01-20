@@ -1,9 +1,9 @@
-"""iNels light."""
+"""iNELS light."""
 from __future__ import annotations
-from typing import Any, cast
-from dataclasses import dataclass
 
-from inelsmqtt.const import RFDAC_71B, DA3_22M, DA3_66M, RC3_610DALI, FA3_612M
+from typing import Any, cast
+
+from inelsmqtt.const import DA3_22M, DA3_66M, FA3_612M, RC3_610DALI, RFDAC_71B
 from inelsmqtt.devices import Device
 
 from homeassistant.components.light import (
@@ -17,10 +17,8 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-
 from .base_class import InelsBaseEntity
-from .const import DEVICES, DOMAIN, ICON_LIGHT, ICON_FLASH, LOGGER
-
+from .const import DEVICES, DOMAIN, ICON_FLASH, ICON_LIGHT, LOGGER
 
 bus_lights = [DA3_22M, DA3_66M, RC3_610DALI, FA3_612M]
 
@@ -30,16 +28,16 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Load Inels lights from config entry."""
-    device_list: "list[Device]" = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
+    """Load iNELS lights from config entry."""
+    device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
 
-    entities = []
+    entities: list[InelsBaseEntity] = []
     for device in device_list:
         if device.inels_type in bus_lights:
             dev_val = device.get_value()
             if "out" in dev_val.ha_value.__dict__:
                 out_len = len(dev_val.ha_value.out)
-                for k, v in enumerate(dev_val.ha_value.out):
+                for k in range(len(dev_val.ha_value.out)):
                     entities.append(
                         InelsLightChannel(
                             device,
@@ -54,7 +52,7 @@ async def async_setup_entry(
                     )
             if "dali" in dev_val.ha_value.__dict__:
                 out_len = len(dev_val.ha_value.dali)
-                for k, v in enumerate(dev_val.ha_value.dali):
+                for k in range(len(dev_val.ha_value.dali)):
                     entities.append(
                         InelsLightChannel(
                             device,
@@ -69,7 +67,7 @@ async def async_setup_entry(
                     )
             if "aout" in dev_val.ha_value.__dict__:
                 out_len = len(dev_val.ha_value.aout)
-                for k, v in enumerate(dev_val.ha_value.aout):
+                for k in range(len(dev_val.ha_value.temps)):
                     entities.append(
                         InelsLightChannel(
                             device,
@@ -146,11 +144,12 @@ class InelsLight(InelsBaseEntity, LightEntity):
 
 
 class InelsLightChannelDescription:
-    """Inels light channel description."""
+    """iNELS light channel description."""
 
     def __init__(
         self, channel_number: int, channel_index: int, icon: str, var: str, name: str
-    ):
+    ) -> None:
+        """Initialize description."""
         self.channel_number = channel_number
         self.channel_index = channel_index
         self.icon = icon
@@ -184,7 +183,7 @@ class InelsLightChannel(InelsBaseEntity, LightEntity):
 
     @property
     def available(self) -> bool:
-        """If it is available"""
+        """If it is available."""
         if self._entity_description.var == "out":
             if "toa" in self._device.state.__dict__:
                 if self._device.state.toa[self._entity_description.channel_index]:
@@ -252,7 +251,7 @@ class InelsLightChannel(InelsBaseEntity, LightEntity):
             await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        """Light to turn on"""
+        """Light to turn on."""
         if not self._device:
             return
 

@@ -6,10 +6,7 @@ from datetime import timedelta
 from inelsmqtt.devices import Device
 
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.update_coordinator import (
-    DataUpdateCoordinator,
-    UpdateFailed,
-)
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import LOGGER
 
@@ -29,10 +26,6 @@ class InelsDeviceUpdateCoordinator(DataUpdateCoordinator[Device]):
             LOGGER,
             name=f"Update coordinator for {device}",
         )
-
-    @property
-    def type(self) -> str:
-        """Type of the coordinator entity."""
 
     @callback
     def _exception_callback(self, exc: Exception) -> None:

@@ -1,4 +1,4 @@
-"""Base class for Inels components."""
+"""Base class for iNELS components."""
 from __future__ import annotations
 
 from typing import Any

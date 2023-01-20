@@ -5,7 +5,7 @@ from collections import OrderedDict
 from typing import Any
 
 from inelsmqtt import InelsMqtt
-from inelsmqtt.const import MQTT_TRANSPORT, MQTT_TIMEOUT
+from inelsmqtt.const import MQTT_TRANSPORT
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -26,7 +26,7 @@ CONNECTION_TIMEOUT = 5
 
 
 class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle of Inels config flow."""
+    """Handle of iNELS config flow."""
 
     VERSION = 1
 
@@ -153,7 +153,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class InelsOptionsFlowHandler(config_entries.OptionsFlow):
-    """Handle Inels options."""
+    """Handle iNELS options."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""

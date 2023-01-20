@@ -13,7 +13,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 
 from .const import BROKER, BROKER_CONFIG, DEVICES, DOMAIN, LOGGER
 
-PLATFORMS: "list[Platform]" = [
+PLATFORMS: list[Platform] = [
     Platform.BUTTON,
     Platform.SWITCH,
     Platform.LIGHT,
@@ -40,7 +40,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         LOGGER.error("MQTT broker is not configured")
         return False
 
-    inels_data: "dict[str, Any]" = {
+    inels_data: dict[str, Any] = {
         BROKER_CONFIG: entry.data,
     }
 
@@ -94,7 +94,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
 
-    if not hass.data[DOMAIN]:
+    if hass.data[DOMAIN]:
         hass.data.pop(DOMAIN)
 
     return True

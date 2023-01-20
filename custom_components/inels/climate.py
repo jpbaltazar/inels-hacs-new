@@ -14,7 +14,7 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_TEMPERATURE, TEMP_CELSIUS, Platform
+from homeassistant.const import ATTR_TEMPERATURE, Platform, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -34,8 +34,8 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Load Inels water heater from config entry."""
-    device_list: "list[Device]" = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
+    """Load iNELS water heater from config entry."""
+    device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
 
     async_add_entities(
         [
@@ -49,9 +49,9 @@ async def async_setup_entry(
 class InelsClimate(InelsBaseEntity, ClimateEntity):
     """Water heater class for HA."""
 
-    _attr_supported_features: int = SUPPORT_FLAGS_CLIMATE
+    _attr_supported_features: ClimateEntityFeature = SUPPORT_FLAGS_CLIMATE
     _attr_hvac_modes: list[HVACMode] = [HVACMode.OFF, HVACMode.HEAT]
-    _attr_temperature_unit: str = TEMP_CELSIUS
+    _attr_temperature_unit: str = UnitOfTemperature.CELSIUS
     _attr_hvac_mode: HVACMode = HVACMode.OFF
 
     def __init__(self, device: Device) -> None:

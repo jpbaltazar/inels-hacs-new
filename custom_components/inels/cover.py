@@ -1,4 +1,4 @@
-"""Inels cover entity."""
+"""iNELS cover entity."""
 from __future__ import annotations
 
 from typing import Any
@@ -21,8 +21,8 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Load Inels cover from config entry."""
-    device_list: "list[Device]" = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
+    """Load iNELS cover from config entry."""
+    device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
 
     async_add_entities(
         [

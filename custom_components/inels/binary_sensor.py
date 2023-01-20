@@ -1,26 +1,25 @@
-"""Inels binary sensor entity."""
+"""iNELS binary sensor entity."""
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from inelsmqtt.devices import Device
 from inelsmqtt.const import (
-    GSB3_90SX,
     DA3_22M,
-    GRT3_50,
-    IM3_80B,
-    IM3_140M,
     DA3_66M,
+    DMD3_1,
+    GRT3_50,
+    GSB3_90SX,
     IM3_20B,
     IM3_40B,
-    DMD3_1,
+    IM3_80B,
+    IM3_140M,
 )
+from inelsmqtt.devices import Device
 
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -30,9 +29,9 @@ from .const import (
     DEVICES,
     DOMAIN,
     ICON_ALERT,
-    ICON_PROXIMITY,
     ICON_BINARY_INPUT,
     ICON_HEAT_WAVE,
+    ICON_PROXIMITY,
     LOGGER,
 )
 
@@ -46,11 +45,10 @@ class InelsBinarySensorEntityDescriptionMixin:
 class InelsBinarySensorEntityDescription(
     BinarySensorEntityDescription, InelsBinarySensorEntityDescriptionMixin
 ):
-    """Class for describing binary sensor inels entities."""
+    """Class for describing binary sensor iNELS entities."""
 
-    array: bool = None
-    var: str = None
-    index: int = None
+    var: str = ""
+    index: int | None = None
 
 
 supported = [
@@ -72,14 +70,14 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Load iNELS binary sensor."""
-    device_list: "list[Device]" = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
-    entities: "list[InelsBinarySensor]" = []
+    device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
+    entities: list[InelsBaseEntity] = []
 
     for device in device_list:
         val = device.get_value()
         if device.inels_type in supported:
             if "toa" in val.ha_value.__dict__:
-                for k, v in enumerate(val.ha_value.toa):
+                for k in range(len(val.ha_value.toa)):
                     entities.append(
                         InelsBinarySensor(
                             device=device,
@@ -89,12 +87,11 @@ async def async_setup_entry(
                                 icon=ICON_ALERT,
                                 index=k,
                                 var="toa",
-                                array=True,
                             ),
                         )
                     )
             if "coa" in val.ha_value.__dict__:
-                for k, v in enumerate(val.ha_value.coa):
+                for k in range(len(val.ha_value.coa)):
                     entities.append(
                         InelsBinarySensor(
                             device=device,
@@ -104,7 +101,6 @@ async def async_setup_entry(
                                 icon=ICON_ALERT,
                                 index=k,
                                 var="coa",
-                                array=True,
                             ),
                         )
                     )
@@ -117,12 +113,11 @@ async def async_setup_entry(
                             name="Proximity sensor",
                             icon=ICON_PROXIMITY,
                             var="prox",
-                            array=False,
                         ),
                     )
                 )
             if "input" in val.ha_value.__dict__:
-                for k, v in enumerate(val.ha_value.input):
+                for k in range(len(val.ha_value.input)):
                     entities.append(
                         InelsBinaryInputSensor(
                             device=device,
@@ -131,7 +126,6 @@ async def async_setup_entry(
                                 name="Binary input sensor",
                                 icon=ICON_BINARY_INPUT,
                                 var="input",
-                                array=True,
                                 index=k,
                             ),
                         )
@@ -145,7 +139,6 @@ async def async_setup_entry(
                             name="Heating output",
                             icon=ICON_HEAT_WAVE,
                             var="heating_out",
-                            array=False,
                         ),
                     )
                 )
@@ -154,7 +147,7 @@ async def async_setup_entry(
 
 
 class InelsBinarySensor(InelsBaseEntity, BinarySensorEntity):
-    """The platform class for binary sensors for home assistant"""
+    """The platform class for binary sensors for home assistant."""
 
     entity_description: InelsBinarySensorEntityDescription
 
@@ -168,8 +161,8 @@ class InelsBinarySensor(InelsBaseEntity, BinarySensorEntity):
 
         self.entity_description = description
 
-        if self.entity_description.array:
-            self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.var}-{self.entity_description.index}"  # TODO make sure it doesn't need more info
+        if self.entity_description.index:
+            self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.var}-{self.entity_description.index}"
         else:
             self._attr_unique_id = (
                 f"{self._attr_unique_id}-{self.entity_description.var}"
@@ -179,25 +172,27 @@ class InelsBinarySensor(InelsBaseEntity, BinarySensorEntity):
 
     @property
     def unique_id(self) -> str | None:
+        """Return unique_id of the entity."""
         return super().unique_id
 
     @property
     def name(self) -> str | None:
+        """Return name of the entity."""
         return super().name
 
     @property
-    def is_on(self):
-        """Return true is sensor is on"""
-        if self.entity_description.array:
+    def is_on(self) -> bool | None:
+        """Return true is sensor is on."""
+        if self.entity_description.index:
             return self._device.values.ha_value.__dict__[self.entity_description.var][
                 self.entity_description.index
             ]
-        else:
-            return self._device.values.ha_value.__dict__[self.entity_description.var]
+
+        return self._device.values.ha_value.__dict__[self.entity_description.var]
 
 
 class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
-    """The platform class for binary sensors of binary values for home assistant"""
+    """The platform class for binary sensors of binary values for home assistant."""
 
     entity_description: InelsBinarySensorEntityDescription
 
@@ -209,12 +204,19 @@ class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
 
         self.entity_description = description
 
-        self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.var}-{self.entity_description.index}"  # TODO make sure it doesn't need more info
+        self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.var}"
+        if self.entity_description.index:
+            self._attr_unique_id = (
+                f"{self._attr_unique_id}-{self.entity_description.index}"
+            )
 
-        self._attr_name = f"{self._attr_name} {self.entity_description.name} {self.entity_description.index +1 }"
+        self._attr_name = f"{self._attr_name} {self.entity_description.name}"
+        if self.entity_description.index:
+            self._attr_name = f"{self._attr_name} {self.entity_description.index + 1}"
 
     @property
     def available(self) -> bool:
+        """Return availability of device."""
         val = self._device.values.ha_value.__dict__[self.entity_description.var][
             self.entity_description.index
         ]
@@ -225,7 +227,7 @@ class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
 
         if val in [0, 1]:
             return True
-        elif last_val != val:
+        if last_val != val:
             if val == 2:
                 LOGGER.warning("%s ALERT", self._attr_unique_id)
             elif val == 3:
@@ -234,23 +236,23 @@ class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
 
     @property
     def unique_id(self) -> str | None:
+        """Return unique_id of the entity."""
         return super().unique_id
 
     @property
     def name(self) -> str | None:
+        """Return name of the entity."""
         return super().name
 
     @property
-    def is_on(self):
-        """Return true is sensor is on"""
-        if self.entity_description.array:
+    def is_on(self) -> bool | None:
+        """Return true is sensor is on."""
+        if self.entity_description.index:
             return (
                 self._device.values.ha_value.__dict__[self.entity_description.var][
                     self.entity_description.index
                 ]
                 == 1
             )
-        else:
-            return (
-                self._device.values.ha_value.__dict__[self.entity_description.var] == 1
-            )
+
+        return self._device.values.ha_value.__dict__[self.entity_description.var] == 1
