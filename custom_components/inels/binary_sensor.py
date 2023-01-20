@@ -161,14 +161,14 @@ class InelsBinarySensor(InelsBaseEntity, BinarySensorEntity):
 
         self.entity_description = description
 
-        if self.entity_description.index:
+        if self.entity_description.index is not None:
             self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.var}-{self.entity_description.index}"
         else:
             self._attr_unique_id = (
                 f"{self._attr_unique_id}-{self.entity_description.var}"
             )
 
-        self._attr_name = f"{self._attr_name}-{self.entity_description.name}"
+        self._attr_name = f"{self._attr_name} {self.entity_description.name}"
 
     @property
     def unique_id(self) -> str | None:
@@ -183,7 +183,7 @@ class InelsBinarySensor(InelsBaseEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return true is sensor is on."""
-        if self.entity_description.index:
+        if self.entity_description.index is not None:
             return self._device.values.ha_value.__dict__[self.entity_description.var][
                 self.entity_description.index
             ]
@@ -247,12 +247,16 @@ class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return true is sensor is on."""
-        if self.entity_description.index:
+        if self.entity_description.index is not None:
+            LOGGER.info(
+                self._device.values.ha_value.__dict__[self.entity_description.var][
+                    self.entity_description.index
+                ]
+            )
             return (
                 self._device.values.ha_value.__dict__[self.entity_description.var][
                     self.entity_description.index
                 ]
                 == 1
             )
-
         return self._device.values.ha_value.__dict__[self.entity_description.var] == 1

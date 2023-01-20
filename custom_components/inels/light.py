@@ -67,7 +67,7 @@ async def async_setup_entry(
                     )
             if "aout" in dev_val.ha_value.__dict__:
                 out_len = len(dev_val.ha_value.aout)
-                for k in range(len(dev_val.ha_value.temps)):
+                for k in range(len(dev_val.ha_value.aout)):
                     entities.append(
                         InelsLightChannel(
                             device,

@@ -1,14 +1,11 @@
-"""Inels switch entity."""
+"""iNELS switch entity."""
 from __future__ import annotations
 
 from dataclasses import dataclass
-from collections.abc import Mapping
 from typing import Any
 
-from inelsmqtt.devices import Device
-
-from inelsmqtt.const import (
-    # Inels types
+from inelsmqtt.const import (  # Inels types
+    RC3_610DALI,
     RFSC_61,
     SA3_01B,
     SA3_02B,
@@ -16,9 +13,8 @@ from inelsmqtt.const import (
     SA3_04M,
     SA3_06M,
     SA3_012M,
-    RC3_610DALI,
-    FA3_612M,
 )
+from inelsmqtt.devices import Device
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.config_entries import ConfigEntry
@@ -35,10 +31,10 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Load Inels switch.."""
+    """Load iNELS switch.."""
     device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
 
-    entities = []
+    entities: list[InelsBaseEntity] = []
     for device in device_list:
         if device.device_type == Platform.SWITCH:
             if device.inels_type == RFSC_61:
@@ -65,7 +61,7 @@ async def async_setup_entry(
                             ),
                         )
                     )
-                for k, v in enumerate(device.state.re):
+                for k in range(len(device.state.re)):
                     entities.append(
                         InelsBusSwitch(
                             device=device,
@@ -89,10 +85,10 @@ class InelsSwitch(InelsBaseEntity, SwitchEntity):
 
     @property
     def available(self) -> bool:
+        """Return entity availability."""
         if "relay_overflow" in self._device.state.__dict__:
             return super().available and not self._device.state.relay_overflow
-        else:
-            return super().available
+        return super().available
 
     @property
     def is_on(self) -> bool:
@@ -127,10 +123,10 @@ class InelsSwitch(InelsBaseEntity, SwitchEntity):
 
 @dataclass
 class InelsSwitchEntityDescription(SwitchEntityDescription):
-    """Class for description inels entities"""
+    """Class for description inels entities."""
 
-    index: int = None
-    name: str = None
+    index: int | None = None
+    name: str | None = None
 
 
 class InelsBusSwitch(InelsBaseEntity, SwitchEntity):
@@ -141,7 +137,7 @@ class InelsBusSwitch(InelsBaseEntity, SwitchEntity):
     def __init__(
         self, device: Device, description: InelsSwitchEntityDescription
     ) -> None:
-        """Initialize a bus switch"""
+        """Initialize a bus switch."""
         super().__init__(device=device)
 
         self.entity_description = description
@@ -151,6 +147,7 @@ class InelsBusSwitch(InelsBaseEntity, SwitchEntity):
 
     @property
     def available(self) -> bool:
+        """Return entity availability."""
         if "relay_overflow" in self._device.state.__dict__:
             if self._device.state.relay_overflow[self.entity_description.index]:
                 LOGGER.warning(
@@ -159,13 +156,12 @@ class InelsBusSwitch(InelsBaseEntity, SwitchEntity):
                     self._device_id,
                 )
                 return False
-            else:
-                return super().available
-        else:
             return super().available
+        return super().available
 
     @property
     def is_on(self) -> bool | None:
+        """Return if switch is on."""
         state = self._device.state
         return state.re[self.entity_description.index]
 
