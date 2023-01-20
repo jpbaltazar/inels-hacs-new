@@ -61,18 +61,19 @@ async def async_setup_entry(
                             ),
                         )
                     )
-                for k in range(len(device.state.re)):
-                    entities.append(
-                        InelsBusSwitch(
-                            device=device,
-                            description=InelsSwitchEntityDescription(
-                                key=f"re{k}",
-                                name=f"Relay {k+1}",
-                                icon=ICON_SWITCH,
-                                index=k,
-                            ),
+                else:
+                    for k in range(len(device.state.re)):
+                        entities.append(
+                            InelsBusSwitch(
+                                device=device,
+                                description=InelsSwitchEntityDescription(
+                                    key=f"re{k}",
+                                    name=f"Relay {k+1}",
+                                    icon=ICON_SWITCH,
+                                    index=k,
+                                ),
+                            )
                         )
-                    )
     async_add_entities(entities, False)
 
 
