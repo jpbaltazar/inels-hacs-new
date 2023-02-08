@@ -371,7 +371,7 @@ async def async_setup_entry(
                         )
                     )
         else:
-            descriptions: tuple[InelsSensorEntityDescription, ...]
+            descriptions: tuple[InelsSensorEntityDescription, ...] = None
 
             if device.device_type == Platform.SENSOR:
                 if device.inels_type == RFTI_10B:
