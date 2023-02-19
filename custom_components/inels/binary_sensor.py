@@ -3,20 +3,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from inelsmqtt.const import (
-    DA3_22M,
-    DA3_66M,
-    DMD3_1,
-    GRT3_50,
-    GSB3_90SX,
-    IM3_20B,
-    IM3_40B,
-    IM3_80B,
-    IM3_140M,
-)
 from inelsmqtt.devices import Device
 
 from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
@@ -28,10 +18,10 @@ from .base_class import InelsBaseEntity
 from .const import (
     DEVICES,
     DOMAIN,
-    ICON_ALERT,
     ICON_BINARY_INPUT,
     ICON_HEAT_WAVE,
     ICON_PROXIMITY,
+    ICON_BATTERY,
     LOGGER,
 )
 
@@ -47,22 +37,6 @@ class InelsBinarySensorEntityDescription(
 ):
     """Class for describing binary sensor iNELS entities."""
 
-    var: str = ""
-    index: int | None = None
-
-
-supported = [
-    GSB3_90SX,
-    DA3_22M,
-    DA3_66M,
-    GRT3_50,
-    IM3_80B,
-    IM3_140M,
-    IM3_20B,
-    IM3_40B,
-    DMD3_1,
-]
-
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -75,73 +49,61 @@ async def async_setup_entry(
 
     for device in device_list:
         val = device.get_value()
-        if device.inels_type in supported:
-            if "toa" in val.ha_value.__dict__:
-                for k in range(len(val.ha_value.toa)):
-                    entities.append(
-                        InelsBinarySensor(
-                            device=device,
-                            description=InelsBinarySensorEntityDescription(
-                                key=f"{k+1}",
-                                name=f"Thermal overload alarm {k+1}",
-                                icon=ICON_ALERT,
-                                index=k,
-                                var="toa",
-                            ),
-                        )
-                    )
-            if "coa" in val.ha_value.__dict__:
-                for k in range(len(val.ha_value.coa)):
-                    entities.append(
-                        InelsBinarySensor(
-                            device=device,
-                            description=InelsBinarySensorEntityDescription(
-                                key=f"{k+1}",
-                                name=f"Current overload alarm {k+1}",
-                                icon=ICON_ALERT,
-                                index=k,
-                                var="coa",
-                            ),
-                        )
-                    )
-            if "prox" in val.ha_value.__dict__:
-                entities.append(
-                    InelsBinarySensor(
-                        device=device,
-                        description=InelsBinarySensorEntityDescription(
-                            key=" ",
-                            name="Proximity sensor",
-                            icon=ICON_PROXIMITY,
-                            var="prox",
-                        ),
-                    )
+        if "low_battery" in val.ha_value.__dict__:
+            entities.append(
+                InelsBinarySensor(
+                    device=device,
+                    key="low_battery",
+                    index=-1,
+                    description=InelsBinarySensorEntityDescription(
+                        key="low_battery",
+                        name="Battery",
+                        icon=ICON_BATTERY,
+                        device_class=BinarySensorDeviceClass.BATTERY,
+                    ),
                 )
-            if "input" in val.ha_value.__dict__:
-                for k in range(len(val.ha_value.input)):
-                    entities.append(
-                        InelsBinaryInputSensor(
-                            device=device,
-                            description=InelsBinarySensorEntityDescription(
-                                key=f"{k}",
-                                name="Binary input sensor",
-                                icon=ICON_BINARY_INPUT,
-                                var="input",
-                                index=k,
-                            ),
-                        )
-                    )
-            if "heating_out" in val.ha_value.__dict__:
+            )
+        if "prox" in val.ha_value.__dict__:
+            entities.append(
+                InelsBinarySensor(
+                    device=device,
+                    key="prox",
+                    index=-1,
+                    description=InelsBinarySensorEntityDescription(
+                        key="prox",
+                        name="Proximity sensor",
+                        icon=ICON_PROXIMITY,
+                        device_class=BinarySensorDeviceClass.MOVING,
+                    ),
+                )
+            )
+        if "input" in val.ha_value.__dict__:
+            for k in range(len(val.ha_value.input)):
                 entities.append(
                     InelsBinaryInputSensor(
                         device=device,
+                        key="input",
+                        index=k,
                         description=InelsBinarySensorEntityDescription(
-                            key="heating_out",
-                            name="Heating output",
-                            icon=ICON_HEAT_WAVE,
-                            var="heating_out",
+                            key=f"input{k}",
+                            name="Binary input sensor",
+                            icon=ICON_BINARY_INPUT,
                         ),
                     )
                 )
+        if "heating_out" in val.ha_value.__dict__:
+            entities.append(
+                InelsBinaryInputSensor(
+                    device=device,
+                    key="heating_out",
+                    index=-1,
+                    description=InelsBinarySensorEntityDescription(
+                        key="heating_out",
+                        name="Heating output",
+                        icon=ICON_HEAT_WAVE,
+                    ),
+                )
+            )
 
     async_add_entities(entities, True)
 
@@ -154,19 +116,19 @@ class InelsBinarySensor(InelsBaseEntity, BinarySensorEntity):
     def __init__(
         self,
         device: Device,
+        key: str,
+        index: int,
         description: InelsBinarySensorEntityDescription,
     ) -> None:
         """Initialize a binary sensor."""
-        super().__init__(device=device)
+        super().__init__(device=device, key=key, index=index)
 
         self.entity_description = description
 
-        if self.entity_description.index is not None:
-            self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.var}-{self.entity_description.index}"
+        if self.index is not None:
+            self._attr_unique_id = f"{self._attr_unique_id}-{self.key}-{self.index}"
         else:
-            self._attr_unique_id = (
-                f"{self._attr_unique_id}-{self.entity_description.var}"
-            )
+            self._attr_unique_id = f"{self._attr_unique_id}-{self.key}"
 
         self._attr_name = f"{self._attr_name} {self.entity_description.name}"
 
@@ -183,12 +145,10 @@ class InelsBinarySensor(InelsBaseEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return true is sensor is on."""
-        if self.entity_description.index is not None:
-            return self._device.values.ha_value.__dict__[self.entity_description.var][
-                self.entity_description.index
-            ]
+        if self.index != -1:
+            return self._device.values.ha_value.__dict__[self.key][self.index]
 
-        return self._device.values.ha_value.__dict__[self.entity_description.var]
+        return self._device.values.ha_value.__dict__[self.key]
 
 
 class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
@@ -197,33 +157,35 @@ class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
     entity_description: InelsBinarySensorEntityDescription
 
     def __init__(
-        self, device: Device, description: InelsBinarySensorEntityDescription
+        self,
+        device: Device,
+        key: str,
+        index: int,
+        description: InelsBinarySensorEntityDescription,
     ) -> None:
         """Initialize a binary sensor."""
-        super().__init__(device=device)
+        super().__init__(
+            device=device,
+            key=key,
+            index=index,
+        )
 
         self.entity_description = description
 
-        self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.var}"
-        if self.entity_description.index:
-            self._attr_unique_id = (
-                f"{self._attr_unique_id}-{self.entity_description.index}"
-            )
+        self._attr_unique_id = f"{self._attr_unique_id}-{self.key}"
+        if self.index:
+            self._attr_unique_id = f"{self._attr_unique_id}-{self.index}"
 
         self._attr_name = f"{self._attr_name} {self.entity_description.name}"
-        if self.entity_description.index:
-            self._attr_name = f"{self._attr_name} {self.entity_description.index + 1}"
+        if self.index:
+            self._attr_name = f"{self._attr_name} {self.index + 1}"
 
     @property
     def available(self) -> bool:
         """Return availability of device."""
-        val = self._device.values.ha_value.__dict__[self.entity_description.var][
-            self.entity_description.index
-        ]
+        val = self._device.values.ha_value.__dict__[self.key][self.index]
 
-        last_val = self._device.last_values.ha_value.__dict__[
-            self.entity_description.var
-        ][self.entity_description.index]
+        last_val = self._device.last_values.ha_value.__dict__[self.key][self.index]
 
         if val in [0, 1]:
             return True
@@ -247,16 +209,7 @@ class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return true is sensor is on."""
-        if self.entity_description.index is not None:
-            LOGGER.info(
-                self._device.values.ha_value.__dict__[self.entity_description.var][
-                    self.entity_description.index
-                ]
-            )
-            return (
-                self._device.values.ha_value.__dict__[self.entity_description.var][
-                    self.entity_description.index
-                ]
-                == 1
-            )
-        return self._device.values.ha_value.__dict__[self.entity_description.var] == 1
+        if self.index is not None:
+            LOGGER.info(self._device.values.ha_value.__dict__[self.key][self.index])
+            return self._device.values.ha_value.__dict__[self.key][self.index] == 1
+        return self._device.values.ha_value.__dict__[self.key] == 1

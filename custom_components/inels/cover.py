@@ -1,14 +1,18 @@
 """iNELS cover entity."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
-from inelsmqtt.const import RFJA_12, SHUTTER_STATE_LIST, STOP_DOWN, STOP_UP
+from inelsmqtt.const import Shutter_state
 from inelsmqtt.devices import Device
 
-from homeassistant.components.cover import CoverDeviceClass, CoverEntity
+from homeassistant.components.cover import (
+    CoverDeviceClass,
+    CoverEntity,
+    CoverEntityDescription,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import STATE_CLOSED, STATE_OPEN, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -24,26 +28,63 @@ async def async_setup_entry(
     """Load iNELS cover from config entry."""
     device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
 
-    async_add_entities(
-        [
-            InelsCover(device)
-            for device in device_list
-            if device.device_type == Platform.COVER
-        ],
-    )
+    entities: list[InelsBaseEntity] = []
+    for device in device_list:
+        if hasattr(device.state, "shutters"):
+            if len(device.state.shutters) == 1:
+                entities.append(
+                    InelsCover(
+                        device=device,
+                        key="shutters",
+                        index=0,
+                        description=InelsCoverEntityDescription(
+                            key="shutter",
+                            name="Shutter",
+                        ),
+                    )
+                )
+            else:
+                for k in range(len(device.state.shutters)):
+                    entities.append(
+                        InelsCover(
+                            device=device,
+                            key="shutters",
+                            index=k,
+                            description=InelsCoverEntityDescription(
+                                key=f"shutter{k}", name=f"Shutter {k+1}"
+                            ),
+                        )
+                    )
+
+    async_add_entities(entities, False)
+
+
+@dataclass
+class InelsCoverEntityDescription(CoverEntityDescription):
+    """Class for description inels entities."""
+
+    name: str = ""
 
 
 class InelsCover(InelsBaseEntity, CoverEntity):
-    """Cover class for Home assistant."""
+    """Cover class for Home Assistant."""
 
-    def __init__(self, device: Device) -> None:
-        """Initialize a cover."""
-        super().__init__(device=device)
+    entity_description: InelsCoverEntityDescription
 
-        if self._device.inels_type is RFJA_12:
-            self._attr_device_class = CoverDeviceClass.SHUTTER
-        else:
-            self._attr_device_class = CoverDeviceClass.SHUTTER
+    def __init__(
+        self,
+        device: Device,
+        key: str,
+        index: int,
+        description: InelsCoverEntityDescription,
+    ) -> None:
+        super().__init__(device=device, key=key, index=index)
+        self.entity_description = description
+
+        self._attr_device_class = CoverDeviceClass.SHUTTER
+
+        self._attr_unique_id = f"{self._attr_unique_id}-{description.key}"
+        self._attr_name = f"{self._attr_name} {description.name}"
 
     @property
     def icon(self) -> str | None:
@@ -53,22 +94,27 @@ class InelsCover(InelsBaseEntity, CoverEntity):
     @property
     def is_closed(self) -> bool | None:
         """Cover is closed."""
-        dev = self._device
-        state = dev.state if dev.state in SHUTTER_STATE_LIST else dev.values.ha_value
-
-        return state is STATE_CLOSED
+        is_closed = (
+            self._device.state.__dict__[self.key][self.index] == Shutter_state.Closed
+        )
+        return is_closed
 
     async def async_open_cover(self, **kwargs: Any) -> None:
-        """Open the cover."""
-        await self.hass.async_add_executor_job(self._device.set_ha_value, STATE_OPEN)
+        """Open cover."""
+        ha_val = self._device.state
+        ha_val.__dict__[self.key][self.index] = Shutter_state.Open
+        await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
 
-    async def async_close_cover(self, **kwargs: Any) -> None:
+    async def async_close_cover(self, **kwargs) -> None:
         """Close cover."""
-        await self.hass.async_add_executor_job(self._device.set_ha_value, STATE_CLOSED)
+        ha_val = self._device.state
+        ha_val.__dict__[self.key][self.index] = Shutter_state.Closed
+        await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Stop cover."""
-        await self.hass.async_add_executor_job(
-            self._device.set_ha_value,
-            STOP_UP if self.is_closed is False else STOP_DOWN,
+        ha_val = self._device.state
+        ha_val.__dict__[self.key][self.index] = (
+            Shutter_state.Stop_up if self.is_closed else Shutter_state.Stop_down
         )
+        await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)

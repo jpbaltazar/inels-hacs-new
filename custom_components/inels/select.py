@@ -5,7 +5,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from inelsmqtt.const import FA3_612M
 from inelsmqtt.devices import Device
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
@@ -34,8 +33,6 @@ class InelsSelectEntityDescription(
 ):
     """Class for describing the iNELS select entities."""
 
-    index: int = 0
-    var: str = ""
     value: Callable[[Device, str], Any | None] | None = None
 
 
@@ -59,20 +56,20 @@ async def async_setup_entry(
     entities: list[InelsSelect] = []
 
     for device in device_list:
-        if device.inels_type is FA3_612M:
-            val = device.get_value()
-            if "fan_speed" in val.ha_value.__dict__:
-                entities.append(
-                    InelsSelect(
-                        device,
-                        InelsSelectEntityDescription(
-                            key="fan_speed",
-                            var="fan_speed",
-                            name="Fan speed",
-                            value=__set_fan_speed,
-                        ),
-                    )
+        val = device.get_value()
+        if hasattr(val.ha_value, "fan_speed"):
+            entities.append(
+                InelsSelect(
+                    device,
+                    key="fan_speed",
+                    index=-1,
+                    description=InelsSelectEntityDescription(
+                        key="fan_speed",
+                        name="Fan speed",
+                        value=__set_fan_speed,
+                    ),
                 )
+            )
     async_add_entities(entities, True)
 
 
@@ -82,19 +79,23 @@ class InelsSelect(InelsBaseEntity, SelectEntity):
     entity_description: InelsSelectEntityDescription
 
     def __init__(
-        self, device: Device, description: InelsSelectEntityDescription
+        self,
+        device: Device,
+        key: str,
+        index: int,
+        description: InelsSelectEntityDescription,
     ) -> None:
         """Initialize a select entity."""
-        super().__init__(device=device)
+        super().__init__(device=device, key=key, index=index)
         self.entity_description = description
 
-        if self.entity_description.index is not None:
-            self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.var}-{self.entity_description.index}"
-            self._attr_name = f"{self._attr_name} {self.entity_description.name} {self.entity_description.index + 1}"
-        else:
-            self._attr_unique_id = (
-                f"{self._attr_unique_id}-{self.entity_description.var}"
+        if self.index != -1:
+            self._attr_unique_id = f"{self._attr_unique_id}-{self.key}-{self.index}"
+            self._attr_name = (
+                f"{self._attr_name} {self.entity_description.name} {self.index + 1}"
             )
+        else:
+            self._attr_unique_id = f"{self._attr_unique_id}-{self.key}"
             self._attr_name = f"{self._attr_name} {self.entity_description.name}"
 
     @property
@@ -110,30 +111,26 @@ class InelsSelect(InelsBaseEntity, SelectEntity):
     @property
     def icon(self) -> str | None:
         """Return the icon of the entity."""
-        if self.entity_description.var in SELECT_OPTIONS_ICON:
-            return SELECT_OPTIONS_ICON[self.entity_description.var]
+        if self.key in SELECT_OPTIONS_ICON:
+            return SELECT_OPTIONS_ICON[self.key]
         return super().icon
 
     @property
     def current_option(self) -> str | None:
         """Return the current selected option."""
         state = self._device.state
-        if self.entity_description.index is not None:
-            option = state.__dict__[self.entity_description.var][
-                self.entity_description.index
-            ]
+        if self.index is not None:
+            option = state.__dict__[self.key][self.index]
 
-            return SELECT_OPTIONS_DICT[self.entity_description.var][option]
-        option = state.__dict__[self.entity_description.var]
-        return SELECT_OPTIONS_DICT[self.entity_description.var][
-            state.__dict__[self.entity_description.var]
-        ]
+            return SELECT_OPTIONS_DICT[self.key][option]
+        option = state.__dict__[self.key]
+        return SELECT_OPTIONS_DICT[self.key][state.__dict__[self.key]]
 
     @property
     def options(self) -> list[str]:
         """Return option list."""
-        if str(self.entity_description.var) in SELECT_OPTIONS_DICT:
-            return SELECT_OPTIONS_DICT[self.entity_description.var]
+        if str(self.key) in SELECT_OPTIONS_DICT:
+            return SELECT_OPTIONS_DICT[self.key]
 
         return []
 
