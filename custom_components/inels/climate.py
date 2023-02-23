@@ -19,7 +19,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_class import InelsBaseEntity
-from .const import DEFAULT_MAX_TEMP, DEFAULT_MIN_TEMP, DEVICES, DOMAIN
+from .const import DEFAULT_MAX_TEMP, DEFAULT_MIN_TEMP, DEVICES, DOMAIN, LOGGER
 
 OPERATION_LIST = [
     STATE_OFF,
@@ -53,19 +53,7 @@ async def async_setup_entry(
                 )
             )
 
-    async_add_entities(
-        [
-            # InelsClimate(device)
-            InelsClimate(
-                device=device,
-                key="climate",
-                index=-1,
-                description=InelsClimateDescription(key="climate", name="Thermovalve"),
-            )
-            for device in device_list
-            if device.device_type == Platform.CLIMATE
-        ],
-    )
+    async_add_entities(entities)
 
 
 @dataclass
@@ -140,3 +128,27 @@ class InelsClimate(InelsBaseEntity, ClimateEntity):
             )
 
         await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
+
+    async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
+        if self.hvac_mode != hvac_mode:
+            ha_val = self._device.state
+            if hvac_mode == HVACMode.OFF:
+                if self.index == -1:
+                    ha_val.__dict__[self.key].required = 0
+                else:
+                    ha_val.__dict__[self.key][self.index].required = 0
+            elif hvac_mode == HVACMode.HEAT:
+                if self.index == -1:
+                    ha_val.__dict__[self.key].required = (
+                        ha_val.__dict__[self.key].current + 2
+                    )
+                else:
+                    ha_val.__dict__[self.key][self.index].required = (
+                        ha_val.__dict__[self.key][self.index].current + 2
+                    )
+
+            return await self.hass.async_add_executor_job(
+                self._device.set_ha_value, ha_val
+            )
+        else:
+            return None

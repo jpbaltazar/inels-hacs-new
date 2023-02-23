@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from inelsmqtt.devices import Device
 
 from homeassistant.components.binary_sensor import (
-    BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
@@ -16,13 +15,15 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_class import InelsBaseEntity
 from .const import (
+    BINARY_INPUT,
+    DEVICE_CLASS,
     DEVICES,
     DOMAIN,
-    ICON_BINARY_INPUT,
-    ICON_HEAT_WAVE,
-    ICON_PROXIMITY,
-    ICON_BATTERY,
+    ICON,
+    INELS_BINARY_SENSOR_TYPES,
     LOGGER,
+    INDEXED,
+    NAME,
 )
 
 
@@ -47,63 +48,103 @@ async def async_setup_entry(
     device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
     entities: list[InelsBaseEntity] = []
 
+    items = INELS_BINARY_SENSOR_TYPES.items()
+
     for device in device_list:
-        val = device.get_value()
-        if "low_battery" in val.ha_value.__dict__:
-            entities.append(
-                InelsBinarySensor(
-                    device=device,
-                    key="low_battery",
-                    index=-1,
-                    description=InelsBinarySensorEntityDescription(
-                        key="low_battery",
-                        name="Battery",
-                        icon=ICON_BATTERY,
-                        device_class=BinarySensorDeviceClass.BATTERY,
-                    ),
-                )
-            )
-        if "prox" in val.ha_value.__dict__:
-            entities.append(
-                InelsBinarySensor(
-                    device=device,
-                    key="prox",
-                    index=-1,
-                    description=InelsBinarySensorEntityDescription(
-                        key="prox",
-                        name="Proximity sensor",
-                        icon=ICON_PROXIMITY,
-                        device_class=BinarySensorDeviceClass.MOVING,
-                    ),
-                )
-            )
-        if "input" in val.ha_value.__dict__:
-            for k in range(len(val.ha_value.input)):
-                entities.append(
-                    InelsBinaryInputSensor(
-                        device=device,
-                        key="input",
-                        index=k,
-                        description=InelsBinarySensorEntityDescription(
-                            key=f"input{k}",
-                            name="Binary input sensor",
-                            icon=ICON_BINARY_INPUT,
-                        ),
+        for key, type_dict in items:
+            if hasattr(device.state, key):
+                if type_dict[BINARY_INPUT]:
+                    binary_sensor_type = InelsBinaryInputSensor
+                else:
+                    binary_sensor_type = InelsBinarySensor
+
+                if not type_dict[INDEXED]:
+                    entities.append(
+                        binary_sensor_type(
+                            device=device,
+                            key=key,
+                            index=-1,
+                            description=InelsBinarySensorEntityDescription(
+                                key=key,
+                                name=type_dict[NAME],
+                                icon=type_dict[ICON],
+                                device_class=type_dict[DEVICE_CLASS],
+                            ),
+                        )
                     )
-                )
-        if "heating_out" in val.ha_value.__dict__:
-            entities.append(
-                InelsBinaryInputSensor(
-                    device=device,
-                    key="heating_out",
-                    index=-1,
-                    description=InelsBinarySensorEntityDescription(
-                        key="heating_out",
-                        name="Heating output",
-                        icon=ICON_HEAT_WAVE,
-                    ),
-                )
-            )
+                else:
+                    for k in range(len(device.state.__dict__[key])):
+                        entities.append(
+                            binary_sensor_type(
+                                device=device,
+                                key=key,
+                                index=k,
+                                description=InelsBinarySensorEntityDescription(
+                                    key=f"{key}{k}",
+                                    name=f"{type_dict[NAME]} {k+1}",
+                                    icon=type_dict[ICON],
+                                    device_class=type_dict[DEVICE_CLASS],
+                                ),
+                            )
+                        )
+
+    # for device in device_list:
+    #     val = device.get_value()
+    #     if "low_battery" in val.ha_value.__dict__:
+    #         entities.append(
+    #             InelsBinarySensor(
+    #                 device=device,
+    #                 key="low_battery",
+    #                 index=-1,
+    #                 description=InelsBinarySensorEntityDescription(
+    #                     key="low_battery",
+    #                     name="Battery",
+    #                     icon=ICON_BATTERY,
+    #                     device_class=BinarySensorDeviceClass.BATTERY,
+    #                 ),
+    #             )
+    #         )
+    #     if "prox" in val.ha_value.__dict__:
+    #         entities.append(
+    #             InelsBinarySensor(
+    #                 device=device,
+    #                 key="prox",
+    #                 index=-1,
+    #                 description=InelsBinarySensorEntityDescription(
+    #                     key="prox",
+    #                     name="Proximity sensor",
+    #                     icon=ICON_PROXIMITY,
+    #                     device_class=BinarySensorDeviceClass.MOVING,
+    #                 ),
+    #             )
+    #         )
+    #     if "input" in val.ha_value.__dict__:
+    #         for k in range(len(val.ha_value.input)):
+    #             entities.append(
+    #                 InelsBinaryInputSensor(
+    #                     device=device,
+    #                     key="input",
+    #                     index=k,
+    #                     description=InelsBinarySensorEntityDescription(
+    #                         key=f"input{k}",
+    #                         name="Binary input sensor",
+    #                         icon=ICON_BINARY_INPUT,
+    #                     ),
+    #                 )
+    #             )
+    #     if "heating_out" in val.ha_value.__dict__:
+    #         entities.append(
+    #             InelsBinaryInputSensor(
+    #                 device=device,
+    #                 key="heating_out",
+    #                 index=-1,
+    #                 description=InelsBinarySensorEntityDescription(
+    #                     key="heating_out",
+    #                     name="Heating output",
+    #                     icon=ICON_HEAT_WAVE,
+    #                 ),
+    #             )
+    #         )
 
     async_add_entities(entities, True)
 

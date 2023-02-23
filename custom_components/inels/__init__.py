@@ -1,6 +1,5 @@
 """The iNels integration."""
 from __future__ import annotations
-
 from typing import Any
 
 from inelsmqtt import InelsMqtt
@@ -36,6 +35,7 @@ async def _async_config_entry_updated(hass: HomeAssistant, entry: ConfigEntry) -
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up iNels from a config entry."""
+
     if CONF_HOST not in entry.data:
         LOGGER.error("MQTT broker is not configured")
         return False

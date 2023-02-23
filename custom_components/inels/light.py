@@ -1,6 +1,6 @@
 """iNELS light."""
 from __future__ import annotations
-
+from dataclasses import dataclass
 from typing import Any, cast
 
 from inelsmqtt.devices import Device
@@ -10,13 +10,21 @@ from homeassistant.components.light import (
     ATTR_TRANSITION,
     ColorMode,
     LightEntity,
+    LightEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .base_class import InelsBaseEntity
-from .const import DEVICES, DOMAIN, ICON_FLASH, ICON_LIGHT, LOGGER
+from .const import (
+    DEVICES,
+    DOMAIN,
+    ICON,
+    INELS_LIGHT_TYPES,
+    LOGGER,
+    NAME,
+)
 
 
 async def async_setup_entry(
@@ -26,60 +34,46 @@ async def async_setup_entry(
 ) -> None:
     """Load iNELS lights from config entry."""
     device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
+    items = INELS_LIGHT_TYPES.items()
 
     entities: list[InelsBaseEntity] = []
     for device in device_list:
-        dev_val = device.get_value()
-        if "out" in dev_val.ha_value.__dict__:
-            for k in range(len(dev_val.ha_value.out)):
-                entities.append(
-                    InelsLight(
-                        device,
-                        key="out",
-                        index=k,
-                        description=InelsLightDescription(
-                            icon=ICON_LIGHT,
-                            name="Light",
-                        ),
+        for key, type_dict in items:
+            if hasattr(device.state, key):
+                if len(device.state.__dict__[key]) == 1:
+                    entities.append(
+                        InelsLight(
+                            device=device,
+                            key=key,
+                            index=0,
+                            description=InelsLightDescription(
+                                key=key,
+                                name=type_dict[NAME],
+                                icon=type_dict[ICON],
+                            ),
+                        )
                     )
-                )
-        if "dali" in dev_val.ha_value.__dict__:
-            for k in range(len(dev_val.ha_value.dali)):
-                entities.append(
-                    InelsLight(
-                        device,
-                        key="dali",
-                        index=k,
-                        description=InelsLightDescription(
-                            icon=ICON_LIGHT,
-                            name="DALI",
-                        ),
-                    )
-                )
-        if "aout" in dev_val.ha_value.__dict__:
-            for k in range(len(dev_val.ha_value.aout)):
-                entities.append(
-                    InelsLight(
-                        device,
-                        key="aout",
-                        index=k,
-                        description=InelsLightDescription(
-                            icon=ICON_FLASH,
-                            name="Analog output",
-                        ),
-                    )
-                )
+                else:
+                    for k in range(len(device.state.__dict__[key])):
+                        entities.append(
+                            InelsLight(
+                                device=device,
+                                key=key,
+                                index=k,
+                                description=InelsLightDescription(
+                                    key=f"{key}{k}",
+                                    name=f"{type_dict[NAME]} {k+1}",
+                                    icon=type_dict[ICON],
+                                ),
+                            )
+                        )
 
     async_add_entities(entities)
 
 
-class InelsLightDescription:
+@dataclass
+class InelsLightDescription(LightEntityDescription):
     """iNELS light description."""
-
-    def __init__(self, icon: str, name: str) -> None:
-        """Initialize description."""
-        self.icon = icon
-        self.name = name
 
 
 class InelsLight(InelsBaseEntity, LightEntity):
@@ -104,7 +98,7 @@ class InelsLight(InelsBaseEntity, LightEntity):
 
         self._attr_unique_id = f"{self._attr_unique_id}-{description.name}-{self.index}"
 
-        self._attr_name = f"{self._attr_name} {description.name} {self.index + 1}"
+        self._attr_name = f"{self._attr_name} {description.name}"
 
         self._attr_supported_color_modes: set[ColorMode] = set()
         self._attr_supported_color_modes.add(ColorMode.BRIGHTNESS)
@@ -112,6 +106,7 @@ class InelsLight(InelsBaseEntity, LightEntity):
     @property
     def available(self) -> bool:
         """If it is available."""
+        # TODO redo this part
         if self.key == "out":
             if "toa" in self._device.state.__dict__:
                 if self._device.state.toa[self.index]:

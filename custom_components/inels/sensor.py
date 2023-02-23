@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from inelsmqtt.const import (  # Data types
-    BATTERY,
     TEMP_IN,
     TEMP_OUT,
     BUS_SENSOR_ERRORS,
@@ -30,7 +29,6 @@ from .base_class import InelsBaseEntity
 from .const import (
     DEVICES,
     DOMAIN,
-    ICON_BATTERY,
     ICON_DEW_POINT,
     ICON_FLASH,
     ICON_HUMIDITY,
@@ -114,20 +112,6 @@ async def async_setup_entry(
 
     for device in device_list:
         val = device.get_value()
-        if BATTERY in val.ha_value.__dict__:
-            entities.append(
-                InelsSensor(
-                    device,
-                    key="battery",
-                    index=-1,
-                    description=InelsSensorDescription(
-                        key="battery",
-                        name="Battery",
-                        icon=ICON_BATTERY,
-                        native_unit_of_measurement=PERCENTAGE,
-                    ),
-                )
-            )
         if TEMP_IN in val.ha_value.__dict__:
             entities.append(
                 InelsSensor(
