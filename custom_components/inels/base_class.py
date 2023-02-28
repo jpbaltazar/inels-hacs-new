@@ -65,9 +65,7 @@ class InelsBaseEntity(Entity):
 
     @property
     def available(self) -> bool:
-        """Return if entity si available."""
-        if self._device.is_subscribed is False:
-            self._device.mqtt.subscribe(self._device.state_topic)
+        """Return if entity is available."""
 
         return self._device.is_available and super().available
 

@@ -123,12 +123,11 @@ class InelsButton(InelsBaseEntity, ButtonEntity):
 
     def _callback(self, new_value: Any) -> None:
         super()._callback(new_value)
-        key_index = int(self.entity_description.key)
         if self.entity_description.name:
             if self.key != "plusminus":
                 entity_id = f"{Platform.BUTTON}.{self._device_id}_{self.entity_description.name.lower().replace(' ', '_')}"
             else:
-                name = "plus" if key_index == 1 else "minus"
+                name = "plus" if self.index == 1 else "minus"
                 entity_id = f"{Platform.BUTTON}.{self._device_id}_{name}"
         else:
             entity_id = f"{Platform.BUTTON}.{self._device_id}_{self.key}_{self.index}"

@@ -101,7 +101,9 @@ class InelsBusSwitch(InelsBaseEntity, SwitchEntity):
         """Return entity availability."""
         if self.entity_description.overload_key is not None:
             if hasattr(self._device.state, self.entity_description.overload_key):
-                if self._device.state.relay_overflow[self.index]:
+                if self._device.state.__dict__[self.entity_description.overload_key][
+                    self.index
+                ]:
                     LOGGER.warning(
                         "Relay overflow in %s of %d",
                         self.name,

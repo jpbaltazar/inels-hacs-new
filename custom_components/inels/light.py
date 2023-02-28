@@ -1,6 +1,6 @@
 """iNELS light."""
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, cast
 
 from inelsmqtt.devices import Device
@@ -24,6 +24,7 @@ from .const import (
     INELS_LIGHT_TYPES,
     LOGGER,
     NAME,
+    SUPPORTED_COLOR_MODES,
 )
 
 
@@ -50,6 +51,7 @@ async def async_setup_entry(
                                 key=key,
                                 name=type_dict[NAME],
                                 icon=type_dict[ICON],
+                                color_modes=type_dict[SUPPORTED_COLOR_MODES],
                             ),
                         )
                     )
@@ -64,6 +66,7 @@ async def async_setup_entry(
                                     key=f"{key}{k}",
                                     name=f"{type_dict[NAME]} {k+1}",
                                     icon=type_dict[ICON],
+                                    color_modes=type_dict[SUPPORTED_COLOR_MODES],
                                 ),
                             )
                         )
@@ -74,6 +77,8 @@ async def async_setup_entry(
 @dataclass
 class InelsLightDescription(LightEntityDescription):
     """iNELS light description."""
+
+    color_modes: list[ColorMode] = field(default_factory=list)
 
 
 class InelsLight(InelsBaseEntity, LightEntity):
@@ -101,27 +106,27 @@ class InelsLight(InelsBaseEntity, LightEntity):
         self._attr_name = f"{self._attr_name} {description.name}"
 
         self._attr_supported_color_modes: set[ColorMode] = set()
-        self._attr_supported_color_modes.add(ColorMode.BRIGHTNESS)
+        self._attr_supported_color_modes |= set(description.color_modes)
 
     @property
     def available(self) -> bool:
         """If it is available."""
         # TODO redo this part
         if self.key == "out":
-            if "toa" in self._device.state.__dict__:
+            if hasattr(self._device.state, "toa"):
                 if self._device.state.toa[self.index]:
                     LOGGER.warning("Thermal overload on light %s", self.name)
                     return False
-            if "coa" in self._device.state.__dict__:
+            if hasattr(self._device.state, "coa"):
                 if self._device.state.coa[self.index]:
                     LOGGER.warning("Current overload on light %s", self.name)
                     return False
         elif self.key == "dali":
-            if "alert_dali_power" in self._device.state.__dict__:
+            if hasattr(self._device.state, "alert_dali_power"):
                 if self._device.state.alert_dali_power:
                     LOGGER.warning("Alert dali power")
                     return False
-            if "alert_dali_communication" in self._device.state.__dict__:
+            if hasattr(self._device.state, "alert_dali_communication"):
                 if self._device.state.alert_dali_communication:
                     LOGGER.warning("Alert dali communication")
                     return False
@@ -166,6 +171,16 @@ class InelsLight(InelsBaseEntity, LightEntity):
         if not self._device:
             return
 
+        # if ATTR_RGB_COLOR in kwargs:
+        #     rgbb = tuple(int(channel / 2.55) for channel in kwargs[ATTR_RGB_COLOR])
+
+        #     ha_val = self._device.get_value().ha_value
+        #     ha_val.__dict__[self.key][self.index].r = rgbb[0]
+        #     ha_val.__dict__[self.key][self.index].g = rgbb[1]
+        #     ha_val.__dict__[self.key][self.index].b = rgbb[2]
+        #     ha_val.__dict__[self.key][self.index].brightness = rgbb[3]
+
+        #     await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
         if ATTR_BRIGHTNESS in kwargs:
             brightness = int(kwargs[ATTR_BRIGHTNESS] / 2.55)
             brightness = min(brightness, 100)

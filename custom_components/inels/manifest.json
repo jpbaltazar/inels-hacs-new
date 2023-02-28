@@ -4,7 +4,7 @@
   "config_flow": true,
   "issue_tracker": "https://github.com/zed4805/inels-hacs-new/issues",
   "documentation": "https://github.com/zed4805/inels-hacs-new",
-  "requirements": ["inels-mqtt-new==0.2.3"],
+  "requirements": ["inels-mqtt-new==0.2.4"],
   "dependencies": ["mqtt"],
   "mqtt": ["inels/status/#"],
   "codeowners": ["@Nejezchleb", "@jhoralek", "@zed4805"],

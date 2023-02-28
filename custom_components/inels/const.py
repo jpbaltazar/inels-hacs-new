@@ -1,6 +1,7 @@
 """Constants for the iNels integration."""
 import logging
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
+from homeassistant.components.light import ColorMode
 
 from homeassistant.const import (
     LIGHT_LUX,
@@ -51,6 +52,9 @@ ICON_FLASH = "mdi:flash"
 ICON_FAN = "mdi:fan"
 ICON_HEAT_WAVE = "mdi:heat-wave"
 ICON_VALVE = "mdi:valve"
+ICON_EYE = "mdi:eye"
+ICON_MOTION = "mdi:motion-sensor"
+ICON_HOME_FLOOD = "mdi:home-flood"
 
 ICON_WATER_HEATER_DICT = {
     "on": "mdi:valve-open",
@@ -99,6 +103,8 @@ OPTIONS = "options"
 OPTIONS_DICT = "options_dict"
 UNIT = "unit"
 OVERFLOW = "overflow"
+RAW_SENSOR_VALUE = "raw_sensor_value"
+SUPPORTED_COLOR_MODES = "supported_color_modes"
 
 # BINARY SENSOR PLATFORM
 INELS_BINARY_SENSOR_TYPES = {
@@ -128,7 +134,28 @@ INELS_BINARY_SENSOR_TYPES = {
         INDEXED: False,
         NAME: "Heating output",
         ICON: ICON_HEAT_WAVE,
+        DEVICE_CLASS: BinarySensorDeviceClass.RUNNING,
+    },
+    "detected": {
+        BINARY_INPUT: False,
+        INDEXED: False,
+        NAME: "Detector",
+        ICON: ICON_EYE,
         DEVICE_CLASS: None,
+    },
+    "motion": {
+        BINARY_INPUT: False,
+        INDEXED: False,
+        NAME: "Motion detector",
+        ICON: ICON_MOTION,
+        DEVICE_CLASS: BinarySensorDeviceClass.MOTION,
+    },
+    "flooded": {
+        BINARY_INPUT: False,
+        INDEXED: False,
+        NAME: "Flooded",
+        ICON: ICON_HOME_FLOOD,
+        DEVICE_CLASS: BinarySensorDeviceClass.MOISTURE,
     },
 }
 
@@ -169,9 +196,26 @@ INELS_SHUTTERS_TYPES = {"shutters": {NAME: "Shutter"}}
 
 # LIGHT PLATFORM
 INELS_LIGHT_TYPES = {
-    "out": {ICON: ICON_LIGHT, NAME: "Light"},
-    "dali": {ICON: ICON_LIGHT, NAME: "DALI"},
-    "aout": {ICON: ICON_FLASH, NAME: "Analog output"},
+    "out": {
+        ICON: ICON_LIGHT,
+        NAME: "Light",
+        SUPPORTED_COLOR_MODES: [ColorMode.BRIGHTNESS],
+    },
+    "dali": {
+        ICON: ICON_LIGHT,
+        NAME: "DALI",
+        SUPPORTED_COLOR_MODES: [ColorMode.BRIGHTNESS],
+    },
+    "aout": {
+        ICON: ICON_FLASH,
+        NAME: "Analog output",
+        SUPPORTED_COLOR_MODES: [ColorMode.BRIGHTNESS],
+    },
+    # "rgb": {
+    #     ICON: ICON_FLASH,
+    #     NAME: "RGB",
+    #     SUPPORTED_COLOR_MODES: [ColorMode.RGB],
+    # },
 }
 
 # SELECT PLATFORM
@@ -186,58 +230,86 @@ INELS_SELECT_TYPES = {
 
 # SENSOR PLATFORM
 INELS_SENSOR_TYPES = {
+    "temp": {
+        INDEXED: False,
+        NAME: "Temperature sensor",
+        ICON: ICON_TEMPERATURE,
+        UNIT: UnitOfTemperature.CELSIUS,
+        RAW_SENSOR_VALUE: False,
+    },
     TEMP_IN: {
         INDEXED: False,
         NAME: "Internal temperature sensor",
         ICON: ICON_TEMPERATURE,
         UNIT: UnitOfTemperature.CELSIUS,
+        RAW_SENSOR_VALUE: False,
     },
     TEMP_OUT: {
         INDEXED: False,
         NAME: "External temperature sensor",
         ICON: ICON_TEMPERATURE,
         UNIT: UnitOfTemperature.CELSIUS,
+        RAW_SENSOR_VALUE: False,
     },
     "light_in": {
         INDEXED: False,
         NAME: "Light intensity",
         ICON: ICON_LIGHT_IN,
         UNIT: LIGHT_LUX,
+        RAW_SENSOR_VALUE: False,
     },
     "ain": {
         INDEXED: False,
         NAME: "Analog temperature sensor",
         ICON: ICON_TEMPERATURE,
         UNIT: UnitOfTemperature.CELSIUS,
+        RAW_SENSOR_VALUE: False,
     },
     "humidity": {
         INDEXED: False,
         NAME: "Humidity",
         ICON: ICON_HUMIDITY,
         UNIT: PERCENTAGE,
+        RAW_SENSOR_VALUE: False,
     },
     "dewpoint": {
         INDEXED: False,
         NAME: "Dew point",
         ICON: ICON_DEW_POINT,
         UNIT: UnitOfTemperature.CELSIUS,
+        RAW_SENSOR_VALUE: False,
     },
     "temps": {
         INDEXED: True,
         NAME: "Temperature sensor",
         ICON: ICON_TEMPERATURE,
         UNIT: UnitOfTemperature.CELSIUS,
+        RAW_SENSOR_VALUE: False,
     },
     "ains": {
         INDEXED: True,
         NAME: "Analog input",
         ICON: ICON_FLASH,
         UNIT: UnitOfElectricPotential.VOLT,
+        RAW_SENSOR_VALUE: False,
+    },
+    "card_state": {
+        INDEXED: False,
+        NAME: "Card read state",
+        ICON: ICON_EYE,
+        UNIT: None,
+        RAW_SENSOR_VALUE: True,
+    },
+    "card_id": {
+        INDEXED: False,
+        NAME: "Card ID",
+        ICON: ICON_EYE,
+        UNIT: None,
+        RAW_SENSOR_VALUE: True,
     },
 }
 
 # SWITCH PLATFORM
 INELS_SWITCH_TYPES = {
     "re": {NAME: "Relay", ICON: ICON_SWITCH, OVERFLOW: "relay_overflow"},
-    "valve": {NAME: "Valve", ICON: ICON_VALVE, OVERFLOW: None},
 }

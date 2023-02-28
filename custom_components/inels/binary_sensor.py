@@ -88,64 +88,6 @@ async def async_setup_entry(
                             )
                         )
 
-    # for device in device_list:
-    #     val = device.get_value()
-    #     if "low_battery" in val.ha_value.__dict__:
-    #         entities.append(
-    #             InelsBinarySensor(
-    #                 device=device,
-    #                 key="low_battery",
-    #                 index=-1,
-    #                 description=InelsBinarySensorEntityDescription(
-    #                     key="low_battery",
-    #                     name="Battery",
-    #                     icon=ICON_BATTERY,
-    #                     device_class=BinarySensorDeviceClass.BATTERY,
-    #                 ),
-    #             )
-    #         )
-    #     if "prox" in val.ha_value.__dict__:
-    #         entities.append(
-    #             InelsBinarySensor(
-    #                 device=device,
-    #                 key="prox",
-    #                 index=-1,
-    #                 description=InelsBinarySensorEntityDescription(
-    #                     key="prox",
-    #                     name="Proximity sensor",
-    #                     icon=ICON_PROXIMITY,
-    #                     device_class=BinarySensorDeviceClass.MOVING,
-    #                 ),
-    #             )
-    #         )
-    #     if "input" in val.ha_value.__dict__:
-    #         for k in range(len(val.ha_value.input)):
-    #             entities.append(
-    #                 InelsBinaryInputSensor(
-    #                     device=device,
-    #                     key="input",
-    #                     index=k,
-    #                     description=InelsBinarySensorEntityDescription(
-    #                         key=f"input{k}",
-    #                         name="Binary input sensor",
-    #                         icon=ICON_BINARY_INPUT,
-    #                     ),
-    #                 )
-    #             )
-    #     if "heating_out" in val.ha_value.__dict__:
-    #         entities.append(
-    #             InelsBinaryInputSensor(
-    #                 device=device,
-    #                 key="heating_out",
-    #                 index=-1,
-    #                 description=InelsBinarySensorEntityDescription(
-    #                     key="heating_out",
-    #                     name="Heating output",
-    #                     icon=ICON_HEAT_WAVE,
-    #                 ),
-    #             )
-    #         )
-
     async_add_entities(entities, True)
 
 
@@ -166,11 +108,7 @@ class InelsBinarySensor(InelsBaseEntity, BinarySensorEntity):
 
         self.entity_description = description
 
-        if self.index is not None:
-            self._attr_unique_id = f"{self._attr_unique_id}-{self.key}-{self.index}"
-        else:
-            self._attr_unique_id = f"{self._attr_unique_id}-{self.key}"
-
+        self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.key}"
         self._attr_name = f"{self._attr_name} {self.entity_description.name}"
 
     @property
@@ -213,20 +151,18 @@ class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
 
         self.entity_description = description
 
-        self._attr_unique_id = f"{self._attr_unique_id}-{self.key}"
-        if self.index:
-            self._attr_unique_id = f"{self._attr_unique_id}-{self.index}"
-
+        self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.key}"
         self._attr_name = f"{self._attr_name} {self.entity_description.name}"
-        if self.index:
-            self._attr_name = f"{self._attr_name} {self.index + 1}"
 
     @property
     def available(self) -> bool:
         """Return availability of device."""
-        val = self._device.values.ha_value.__dict__[self.key][self.index]
 
-        last_val = self._device.last_values.ha_value.__dict__[self.key][self.index]
+        val = self._device.values.ha_value.__dict__[self.key]
+        last_val = self._device.last_values.ha_value.__dict__[self.key]
+        if self.index != -1:
+            val = val[self.index]
+            last_val = last_val[self.index]
 
         if val in [0, 1]:
             return True
@@ -250,7 +186,7 @@ class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return true is sensor is on."""
-        if self.index is not None:
+        if self.index != -1:
             LOGGER.info(self._device.values.ha_value.__dict__[self.key][self.index])
             return self._device.values.ha_value.__dict__[self.key][self.index] == 1
         return self._device.values.ha_value.__dict__[self.key] == 1
