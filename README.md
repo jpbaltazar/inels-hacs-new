@@ -1,5 +1,5 @@
-# Inels hacs integration
-Temporary repository of iNELS to mqtt home assistant community store integration.
+# Inels HACS integration
+Temporary repository of iNELS to mqtt Home Assistant Community Store integration.
 
 ![iNELS_icon][iNELS_icon]
 
