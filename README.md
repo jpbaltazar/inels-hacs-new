@@ -1,5 +1,14 @@
 # Inels HACS integration
-Temporary repository of iNELS to mqtt Home Assistant Community Store integration.
+
+[![GitHub Release][releases-shield]][releases]
+[![GitHub Activity][commits-shield]][commits]
+[![License][license-shield]](LICENSE)
+
+[![hacs][hacsbadge]][hacs]
+[![Project Maintenance][maintenance-shield]](http://github.com/ZeD4805)
+[![Community Forum][forum-shield]][forum]
+
+Repository of the official iNELS MQTT Home Assistant Community Store integration.
 
 ![iNELS_icon][iNELS_icon]
 
@@ -78,3 +87,13 @@ Platform | Description
 
 [iNELS_icon]: https://www.inels.com/media/img/logo.png
 [iNELS]: https://www.inels.com/
+[commits-shield]: https://img.shields.io/github/commit-activity/y/ZeD4805/inels-hacs-new.svg?style=for-the-badge
+[commits]: https://github.com/ZeD4805/inels-hacs-new/commits/master
+[hacs]: https://github.com/custom-components/hacs
+[hacsbadge]: https://img.shields.io/badge/HACS-Default-orange.svg?style=for-the-badge
+[forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=for-the-badge
+[forum]: https://community.home-assistant.io/
+[license-shield]: https://img.shields.io/github/license/ZeD4805/inels-hacs-new.svg?style=for-the-badge
+[maintenance-shield]: https://img.shields.io/badge/maintainer-ZeD4805-blue.svg?style=for-the-badge
+[releases-shield]: https://img.shields.io/github/release/ZeD4805/inels-hacs-new.svg?style=for-the-badge
+[releases]: https://github.com/ZeD4805/inels-hacs-new/releases
