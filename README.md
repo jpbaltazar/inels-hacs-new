@@ -9,14 +9,14 @@ Allows the integration of both wireless and bus based [iNELS] devices.
 Platforms used:
 Platform | Description
 -- | --
-'binary_sensor' | Mostly used to show binary input sensors, motion sensors, proximity sensors...
-'button' | Used to trigger HA automations as if the physical buttons were pressed themselves
-'climate' | Used to control thermovalves and thermostat behaviour
-'cover' | Used to control shutters
-'light' | Used to control various types of lights (dimmable lights, RGB, DALI...)
-'sensor' | Used to show a wide array of sensors and their values (temperature, voltage, humidity, light...)
-'select' | Used to display and select from a given number of options (used only to control fan speed)
-'switch' | Used to control relays in the devices
+`binary_sensor` | Mostly used to show binary input sensors, motion sensors, proximity sensors...
+`button` | Used to trigger HA automations as if the physical buttons were pressed themselves
+`climate` | Used to control thermovalves and thermostat behaviour
+`cover` | Used to control shutters
+`light` | Used to control various types of lights (dimmable lights, RGB, DALI...)
+`sensor` | Used to show a wide array of sensors and their values (temperature, voltage, humidity, light...)
+`select` | Used to display and select from a given number of options (used only to control fan speed)
+`switch` | Used to control relays in the devices
 
 ## Supported devices
 ### Wireless
