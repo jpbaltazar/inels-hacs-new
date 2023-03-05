@@ -10,7 +10,11 @@
 
 Repository of the official iNELS MQTT Home Assistant Community Store integration.
 
-![iNELS_icon][iNELS_icon]
+[![iNELS_icon][iNELS_icon]][iNELS]
+
+[![elko_ep_icon][elko_ep_icon]][elko_ep]
+
+[iNELS][iNELS] by [ELKO EP][elko_ep]
 
 ## Features
 Allows the integration of both wireless and bus based [iNELS] devices.
@@ -87,6 +91,8 @@ Platform | Description
 
 [iNELS_icon]: https://www.inels.com/media/img/logo.png
 [iNELS]: https://www.inels.com/
+[elko_ep_icon]: https://www.elkoep.com/media/img/logo.png
+[elko_ep]: https://www.elkoep.com
 [commits-shield]: https://img.shields.io/github/commit-activity/y/ZeD4805/inels-hacs-new.svg?style=for-the-badge
 [commits]: https://github.com/ZeD4805/inels-hacs-new/commits/master
 [hacs]: https://github.com/custom-components/hacs
