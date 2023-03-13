@@ -36,6 +36,7 @@ Platform | Description
 - Switches (01, 02)
 - Shutters (03, 21)
 - Light dimmers (04, 05)
+- RGB dimmer (06)
 - Switches with external temperature sensors (07)
 - Wireless thermovalves (09)
 - Temperature sensors (10)
@@ -78,8 +79,8 @@ Platform | Description
 - GSB3-60SX (139)
 - GSB3-20SX (140)
 - GBP3-60 (141)
-- DAC3_04B (147)
-- DAC3_04M (148)
+- DAC3-04B (147)
+- DAC3-04M (148)
 - DCDA-33M (150)
 - DA3-66M (151)
 - ADC3-60M (156)
@@ -87,7 +88,8 @@ Platform | Description
 - TI3-40B (158)
 - TI3-60M (159)
 - IDRT3-1 (160)
-
+- Virtual heating regulator (167)
+- Virtual cooling regulator (168)
 
 [iNELS_icon]: https://www.inels.com/media/img/logo.png
 [iNELS]: https://www.inels.com/
