@@ -14,12 +14,17 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_TEMPERATURE, Platform, UnitOfTemperature
+from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .base_class import InelsBaseEntity
-from .const import DEFAULT_MAX_TEMP, DEFAULT_MIN_TEMP, DEVICES, DOMAIN, LOGGER
+from .entity import InelsBaseEntity
+from .const import (
+    DEFAULT_MAX_TEMP,
+    DEFAULT_MIN_TEMP,
+    DEVICES,
+    DOMAIN,
+)
 
 OPERATION_LIST = [
     STATE_OFF,
@@ -27,6 +32,20 @@ OPERATION_LIST = [
 ]
 
 SUPPORT_FLAGS_CLIMATE = ClimateEntityFeature.TARGET_TEMPERATURE
+
+# CLIMATE PLATFORM
+@dataclass
+class InelsClimateType:
+    """Climate type property description"""
+
+    name: str
+
+
+INELS_CLIMATE_TYPES: dict[str, InelsClimateType] = {
+    "climate": InelsClimateType(name="Thermovalve")
+}
+
+# INELS_CLIMATE_TYPES = {"climate": {INDEXED: False, NAME: "Thermovalve"}}
 
 
 async def async_setup_entry(
@@ -36,22 +55,23 @@ async def async_setup_entry(
 ) -> None:
     """Load iNELS water heater from config entry."""
     device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
-
     entities: list[InelsBaseEntity] = []
 
+    items = INELS_CLIMATE_TYPES.items()
+
     for device in device_list:
-        val = device.get_value()
-        if hasattr(val.ha_value, "climate"):
-            entities.append(
-                InelsClimate(
-                    device=device,
-                    key="climate",
-                    index=-1,
-                    description=InelsClimateDescription(
-                        key="climate", name="Thermovalve"
-                    ),
+        for key, type_dict in items:
+            if hasattr(device.state, key):
+                entities.append(
+                    InelsClimate(
+                        device=device,
+                        key=key,
+                        index=-1,
+                        description=InelsClimateDescription(
+                            key=key, name=type_dict.name
+                        ),
+                    )
                 )
-            )
 
     async_add_entities(entities)
 
@@ -69,7 +89,6 @@ class InelsClimate(InelsBaseEntity, ClimateEntity):
     _attr_supported_features: ClimateEntityFeature = SUPPORT_FLAGS_CLIMATE
     _attr_hvac_modes: list[HVACMode] = [HVACMode.OFF, HVACMode.HEAT]
     _attr_temperature_unit: str = UnitOfTemperature.CELSIUS
-    _attr_hvac_mode: HVACMode = HVACMode.HEAT  # OFF
 
     entity_description: InelsClimateDescription
 
@@ -88,29 +107,16 @@ class InelsClimate(InelsBaseEntity, ClimateEntity):
     @property
     def current_temperature(self) -> float | None:
         """Get current temperature."""
-        if self._device.state is not None:
-            if self.index == -1:
-                return self._device.state.__dict__[self.key].current
-            return self._device.state.__dict__[self.key][self.index].current
-
-        return super().current_temperature
+        return self._device.state.__dict__[self.key].current
 
     @property
     def target_temperature(self) -> float | None:
         """Get target temperature."""
-        if self._device.state is not None:
-            if self.index == -1:
-                return self._device.state.__dict__[self.key].required
-            return self._device.state.__dict__[self.key][self.index].required
-
-        return super().current_temperature
+        return self._device.state.__dict__[self.key].required
 
     @property
     def hvac_mode(self) -> HVACMode | str | None:
-        if self.index == -1:
-            val = self._device.state.__dict__[self.key]
-        else:
-            val = self._device.state.__dict__[self.key][self.index]
+        val = self._device.state.__dict__[self.key]
 
         if val.current < val.required:
             return HVACMode.HEAT
@@ -119,13 +125,7 @@ class InelsClimate(InelsBaseEntity, ClimateEntity):
     async def async_set_temperature(self, **kwargs) -> None:
         """Set the required temperature."""
         ha_val = self._device.state
-
-        if self.index == -1:
-            ha_val.__dict__[self.key].required = kwargs.get(ATTR_TEMPERATURE)
-        else:
-            ha_val.__dict__[self.key][self.index].required = kwargs.get(
-                ATTR_TEMPERATURE
-            )
+        ha_val.__dict__[self.key].required = kwargs.get(ATTR_TEMPERATURE)
 
         await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
 
@@ -133,22 +133,13 @@ class InelsClimate(InelsBaseEntity, ClimateEntity):
         if self.hvac_mode != hvac_mode:
             ha_val = self._device.state
             if hvac_mode == HVACMode.OFF:
-                if self.index == -1:
-                    ha_val.__dict__[self.key].required = 0
-                else:
-                    ha_val.__dict__[self.key][self.index].required = 0
+                ha_val.__dict__[self.key].required = 0
             elif hvac_mode == HVACMode.HEAT:
-                if self.index == -1:
-                    ha_val.__dict__[self.key].required = (
-                        ha_val.__dict__[self.key].current + 2
-                    )
-                else:
-                    ha_val.__dict__[self.key][self.index].required = (
-                        ha_val.__dict__[self.key][self.index].current + 2
-                    )
+                ha_val.__dict__[self.key].required = (
+                    ha_val.__dict__[self.key].current + 2
+                )
 
             return await self.hass.async_add_executor_job(
                 self._device.set_ha_value, ha_val
             )
-        else:
-            return None
+        return None

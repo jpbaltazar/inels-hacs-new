@@ -16,7 +16,7 @@ from homeassistant.const import ATTR_TEMPERATURE, STATE_ON, Platform, UnitOfTemp
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .base_class import InelsBaseEntity
+from .entity import InelsBaseEntity
 from .const import (
     DEFAULT_MAX_TEMP,
     DEFAULT_MIN_TEMP,

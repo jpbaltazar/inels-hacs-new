@@ -1,21 +1,6 @@
 """Constants for the iNels integration."""
 import logging
-from homeassistant.components.binary_sensor import BinarySensorDeviceClass
-from homeassistant.components.light import ColorMode
 
-from homeassistant.const import (
-    LIGHT_LUX,
-    PERCENTAGE,
-    Platform,
-    UnitOfElectricPotential,
-    UnitOfTemperature,
-)
-from homeassistant.helpers.entity import EntityCategory
-
-from inelsmqtt.const import (
-    TEMP_IN,
-    TEMP_OUT,
-)
 
 DOMAIN = "inels"
 
@@ -34,7 +19,7 @@ DEFAULT_MIN_TEMP = 10.0  # °C
 DEFAULT_MAX_TEMP = 50.0  # °C
 
 ICON_TEMPERATURE = "mdi:thermometer"
-ICON_BATTERY = "mdi:battery-50"
+ICON_BATTERY = "mdi:battery"
 ICON_SWITCH = "mdi:power-socket-eu"
 ICON_LIGHT = "mdi:lightbulb"
 ICON_SHUTTER_CLOSED = "mdi:window-shutter"
@@ -55,6 +40,14 @@ ICON_VALVE = "mdi:valve"
 ICON_EYE = "mdi:eye"
 ICON_MOTION = "mdi:motion-sensor"
 ICON_HOME_FLOOD = "mdi:home-flood"
+ICON_CARD_PRESENT = "mdi:smart-card-reader-outline"
+ICON_CARD_ID = "mdi:smart-card-outline"
+ICON_SNOWFLAKE = "mdi:snowflake"
+ICON_CYCLE = "mdi:sync"
+ICON_FAN_1 = "mdi:fan-speed-1"
+ICON_FAN_2 = "mdi:fan-speed-2"
+ICON_FAN_3 = "mdi:fan-speed-3"
+ICON_ECO = "mdi:leaf"
 
 ICON_WATER_HEATER_DICT = {
     "on": "mdi:valve-open",
@@ -65,23 +58,15 @@ ICON_RELAY_DICT = {
     "on": "mdi:flash",
     "off": "mdi:flash-outline",
 }
-ICON_TWOCHANNELDIMMER = "mdi:lightbulb-multiple"
-ICON_THERMOSTAT = "mdi:home-thermometer-outline"
-ICON_BUTTONARRAY = "mdi:button-pointer"
 
-ICONS = {
-    Platform.SWITCH: ICON_SWITCH,
-    Platform.SENSOR: ICON_TEMPERATURE,
-    Platform.BUTTON: ICON_BUTTON,
-    Platform.LIGHT: ICON_LIGHT,
-}
+ICON_THERMOSTAT = "mdi:home-thermometer-outline"
 
 MANUAL_SETUP = "manual"
 
 BUTTON_PRESS_STATE = "press"
 BUTTON_NO_ACTION_STATE = "no_action"
 
-FAN_SPEED_OPTIONS: list[str] = ["Off", "Speed 1", "Speed 2", "Speed 3"]
+FAN_SPEED_OPTIONS: "list[str]" = ["Off", "Speed 1", "Speed 2", "Speed 3"]
 FAN_SPEED_DICT = {"Off": 0, "Speed 1": 1, "Speed 2": 2, "Speed 3": 3}
 
 SELECT_OPTIONS_DICT = {
@@ -105,211 +90,4 @@ UNIT = "unit"
 OVERFLOW = "overflow"
 RAW_SENSOR_VALUE = "raw_sensor_value"
 SUPPORTED_COLOR_MODES = "supported_color_modes"
-
-# BINARY SENSOR PLATFORM
-INELS_BINARY_SENSOR_TYPES = {
-    "low_battery": {
-        BINARY_INPUT: False,
-        INDEXED: False,
-        NAME: "Battery",
-        ICON: ICON_BATTERY,
-        DEVICE_CLASS: BinarySensorDeviceClass.BATTERY,
-    },
-    "prox": {
-        BINARY_INPUT: False,
-        INDEXED: False,
-        NAME: "Proximity Sensor",
-        ICON: ICON_PROXIMITY,
-        DEVICE_CLASS: BinarySensorDeviceClass.MOVING,
-    },
-    "input": {
-        BINARY_INPUT: True,
-        INDEXED: True,
-        NAME: "Binary input sensor",
-        ICON: ICON_BINARY_INPUT,
-        DEVICE_CLASS: None,
-    },
-    "heating_out": {
-        BINARY_INPUT: False,
-        INDEXED: False,
-        NAME: "Heating output",
-        ICON: ICON_HEAT_WAVE,
-        DEVICE_CLASS: BinarySensorDeviceClass.RUNNING,
-    },
-    "detected": {
-        BINARY_INPUT: False,
-        INDEXED: False,
-        NAME: "Detector",
-        ICON: ICON_EYE,
-        DEVICE_CLASS: None,
-    },
-    "motion": {
-        BINARY_INPUT: False,
-        INDEXED: False,
-        NAME: "Motion detector",
-        ICON: ICON_MOTION,
-        DEVICE_CLASS: BinarySensorDeviceClass.MOTION,
-    },
-    "flooded": {
-        BINARY_INPUT: False,
-        INDEXED: False,
-        NAME: "Flooded",
-        ICON: ICON_HOME_FLOOD,
-        DEVICE_CLASS: BinarySensorDeviceClass.MOISTURE,
-    },
-}
-
-# BUTTON PLATFORM
-INELS_BUTTON_TYPES = {
-    "btn": {
-        NAME: "Button",
-        ICON: ICON_BUTTON,
-        ENTITY_CATEGORY: EntityCategory.CONFIG,
-    },
-    "din": {
-        NAME: "Digital input",
-        ICON: ICON_BUTTON,
-        ENTITY_CATEGORY: EntityCategory.CONFIG,
-    },
-    "sw": {
-        NAME: "Switch",
-        ICON: ICON_BUTTON,
-        ENTITY_CATEGORY: EntityCategory.CONFIG,
-    },
-    "plus": {
-        NAME: "Plus",
-        ICON: ICON_PLUS,
-        ENTITY_CATEGORY: EntityCategory.CONFIG,
-    },
-    "minus": {
-        NAME: "Minus",
-        ICON: ICON_MINUS,
-        ENTITY_CATEGORY: EntityCategory.CONFIG,
-    },
-}
-
-# CLIMATE PLATFORM
-INELS_CLIMATE_TYPES = {"climate": {INDEXED: False, NAME: "Thermovalve"}}
-
-# SHUTTERS PLATFORM
-INELS_SHUTTERS_TYPES = {"shutters": {NAME: "Shutter"}}
-
-# LIGHT PLATFORM
-INELS_LIGHT_TYPES = {
-    "out": {
-        ICON: ICON_LIGHT,
-        NAME: "Light",
-        SUPPORTED_COLOR_MODES: [ColorMode.BRIGHTNESS],
-    },
-    "dali": {
-        ICON: ICON_LIGHT,
-        NAME: "DALI",
-        SUPPORTED_COLOR_MODES: [ColorMode.BRIGHTNESS],
-    },
-    "aout": {
-        ICON: ICON_FLASH,
-        NAME: "Analog output",
-        SUPPORTED_COLOR_MODES: [ColorMode.BRIGHTNESS],
-    },
-    # "rgb": {
-    #     ICON: ICON_FLASH,
-    #     NAME: "RGB",
-    #     SUPPORTED_COLOR_MODES: [ColorMode.RGB],
-    # },
-}
-
-# SELECT PLATFORM
-INELS_SELECT_TYPES = {
-    "fan_speed": {
-        NAME: "Fan speed",
-        ICON: ICON_FAN,
-        OPTIONS: ["Off", "Speed 1", "Speed 2", "Speed 3"],
-        OPTIONS_DICT: {"Off": 0, "Speed 1": 1, "Speed 2": 2, "Speed 3": 3},
-    }
-}
-
-# SENSOR PLATFORM
-INELS_SENSOR_TYPES = {
-    "temp": {
-        INDEXED: False,
-        NAME: "Temperature sensor",
-        ICON: ICON_TEMPERATURE,
-        UNIT: UnitOfTemperature.CELSIUS,
-        RAW_SENSOR_VALUE: False,
-    },
-    TEMP_IN: {
-        INDEXED: False,
-        NAME: "Internal temperature sensor",
-        ICON: ICON_TEMPERATURE,
-        UNIT: UnitOfTemperature.CELSIUS,
-        RAW_SENSOR_VALUE: False,
-    },
-    TEMP_OUT: {
-        INDEXED: False,
-        NAME: "External temperature sensor",
-        ICON: ICON_TEMPERATURE,
-        UNIT: UnitOfTemperature.CELSIUS,
-        RAW_SENSOR_VALUE: False,
-    },
-    "light_in": {
-        INDEXED: False,
-        NAME: "Light intensity",
-        ICON: ICON_LIGHT_IN,
-        UNIT: LIGHT_LUX,
-        RAW_SENSOR_VALUE: False,
-    },
-    "ain": {
-        INDEXED: False,
-        NAME: "Analog temperature sensor",
-        ICON: ICON_TEMPERATURE,
-        UNIT: UnitOfTemperature.CELSIUS,
-        RAW_SENSOR_VALUE: False,
-    },
-    "humidity": {
-        INDEXED: False,
-        NAME: "Humidity",
-        ICON: ICON_HUMIDITY,
-        UNIT: PERCENTAGE,
-        RAW_SENSOR_VALUE: False,
-    },
-    "dewpoint": {
-        INDEXED: False,
-        NAME: "Dew point",
-        ICON: ICON_DEW_POINT,
-        UNIT: UnitOfTemperature.CELSIUS,
-        RAW_SENSOR_VALUE: False,
-    },
-    "temps": {
-        INDEXED: True,
-        NAME: "Temperature sensor",
-        ICON: ICON_TEMPERATURE,
-        UNIT: UnitOfTemperature.CELSIUS,
-        RAW_SENSOR_VALUE: False,
-    },
-    "ains": {
-        INDEXED: True,
-        NAME: "Analog input",
-        ICON: ICON_FLASH,
-        UNIT: UnitOfElectricPotential.VOLT,
-        RAW_SENSOR_VALUE: False,
-    },
-    "card_state": {
-        INDEXED: False,
-        NAME: "Card read state",
-        ICON: ICON_EYE,
-        UNIT: None,
-        RAW_SENSOR_VALUE: True,
-    },
-    "card_id": {
-        INDEXED: False,
-        NAME: "Card ID",
-        ICON: ICON_EYE,
-        UNIT: None,
-        RAW_SENSOR_VALUE: True,
-    },
-}
-
-# SWITCH PLATFORM
-INELS_SWITCH_TYPES = {
-    "re": {NAME: "Relay", ICON: ICON_SWITCH, OVERFLOW: "relay_overflow"},
-}
+SUPPORTED_FEATURES = "supported_features"

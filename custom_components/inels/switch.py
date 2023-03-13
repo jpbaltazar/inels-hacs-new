@@ -8,20 +8,44 @@ from inelsmqtt.devices import Device
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .base_class import InelsBaseEntity
+from .entity import InelsBaseEntity
 from .const import (
     DEVICES,
     DOMAIN,
-    ICON,
-    INELS_SWITCH_TYPES,
+    ICON_SWITCH,
     LOGGER,
-    NAME,
-    OVERFLOW,
 )
+
+
+# SWITCH PLATFORM
+@dataclass
+class InelsSwitchAlert:
+    """Inels switch alert property description."""
+
+    key: str
+    message: str
+
+
+relay_overflow = InelsSwitchAlert(key="overflow", message="Relay overflow in %s of %d")
+
+
+@dataclass
+class InelsSwitchType:
+    """Inels switch property description"""
+
+    name: str = "Relay"
+    icon: str = ICON_SWITCH
+    overflow: str | None = None
+    alerts: list[InelsSwitchAlert] | None = None
+
+
+INELS_SWITCH_TYPES: dict[str, InelsSwitchType] = {
+    "simple_relay": InelsSwitchType(),
+    "relay": InelsSwitchType(alerts=[relay_overflow]),
+}
 
 
 async def async_setup_entry(
@@ -45,9 +69,9 @@ async def async_setup_entry(
                             index=0,
                             description=InelsSwitchEntityDescription(
                                 key=key,
-                                name=type_dict[NAME],
-                                icon=type_dict[ICON],
-                                overload_key=type_dict[OVERFLOW],
+                                name=type_dict.name,
+                                icon=type_dict.icon,
+                                overload_key=type_dict.overflow,
                             ),
                         )
                     )
@@ -60,9 +84,9 @@ async def async_setup_entry(
                                 index=k,
                                 description=InelsSwitchEntityDescription(
                                     key=f"{key}{k}",
-                                    name=f"{type_dict[NAME]} {k+1}",
-                                    icon=type_dict[ICON],
-                                    overload_key=type_dict[OVERFLOW],
+                                    name=f"{type_dict.name} {k+1}",
+                                    icon=type_dict.icon,
+                                    overload_key=type_dict.overflow,
                                 ),
                             )
                         )
@@ -74,6 +98,7 @@ class InelsSwitchEntityDescription(SwitchEntityDescription):
     """Class for description inels entities."""
 
     overload_key: str | None = None
+    alerts: list[InelsSwitchAlert] | None = None
 
 
 class InelsBusSwitch(InelsBaseEntity, SwitchEntity):
@@ -99,24 +124,23 @@ class InelsBusSwitch(InelsBaseEntity, SwitchEntity):
     @property
     def available(self) -> bool:
         """Return entity availability."""
-        if self.entity_description.overload_key is not None:
-            if hasattr(self._device.state, self.entity_description.overload_key):
-                if self._device.state.__dict__[self.entity_description.overload_key][
-                    self.index
-                ]:
-                    LOGGER.warning(
-                        "Relay overflow in %s of %d",
-                        self.name,
-                        self._device_id,
-                    )
-                    return False
+        if self.entity_description.alerts:
+            last_state = self._device.last_values.ha_value.__dict__[self.key][
+                self.index
+            ]
+            for alert in self.entity_description.alerts:
+                if hasattr(self._device.state, alert.key):
+                    if self._device.state.__dict__[alert.key]:
+                        if not last_state.__dict__[alert.key]:
+                            LOGGER.warning(alert.message, self.name, self._device_id)
+                        return False
         return super().available
 
     @property
     def is_on(self) -> bool | None:
         """Return if switch is on."""
         state = self._device.state
-        return state.__dict__[self.key][self.index]
+        return state.__dict__[self.key][self.index].is_on
 
     @property
     def icon(self) -> str | None:
@@ -129,7 +153,7 @@ class InelsBusSwitch(InelsBaseEntity, SwitchEntity):
             return None
 
         ha_val = self._device.state
-        ha_val.__dict__[self.key][self.index] = False
+        ha_val.__dict__[self.key][self.index].is_on = False
 
         await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
 
@@ -139,6 +163,6 @@ class InelsBusSwitch(InelsBaseEntity, SwitchEntity):
             return None
 
         ha_val = self._device.state
-        ha_val.__dict__[self.key][self.index] = True
+        ha_val.__dict__[self.key][self.index].is_on = True
 
         await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)

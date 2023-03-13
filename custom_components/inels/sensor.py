@@ -8,30 +8,119 @@ from inelsmqtt.const import (  # Data types
     BUS_SENSOR_ERRORS,
 )
 from inelsmqtt.devices import Device
+from inelsmqtt.const import (
+    TEMP_IN,
+    TEMP_OUT,
+)
 
 from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
 )
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import (
+    LIGHT_LUX,
+    PERCENTAGE,
+    UnitOfElectricPotential,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .base_class import InelsBaseEntity
+from .entity import InelsBaseEntity
 from .const import (
     DEVICES,
     DOMAIN,
-    ICON,
-    INDEXED,
-    INELS_SENSOR_TYPES,
+    ICON_CARD_ID,
+    ICON_DEW_POINT,
+    ICON_FLASH,
+    ICON_HUMIDITY,
+    ICON_LIGHT_IN,
+    ICON_TEMPERATURE,
     LOGGER,
-    NAME,
-    RAW_SENSOR_VALUE,
-    UNIT,
 )
 
 
-def _process_value_2(val: str) -> tuple[str, bool]:
+# SENSOR PLATFORM
+@dataclass
+class InelsSensorType:
+    """Select type property description."""
+
+    name: str
+    icon: str
+    unit: str
+    indexed: bool = False
+    raw_sensor_value: bool = False
+    device_class: SensorDeviceClass | None = None
+
+
+INELS_SENSOR_TYPES: dict[str, InelsSensorType] = {
+    "temp": InelsSensorType(
+        name="Temperature sensor",
+        icon=ICON_TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+    ),
+    TEMP_IN: InelsSensorType(
+        name="Internal temperature sensor",
+        icon=ICON_TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+    ),
+    TEMP_OUT: InelsSensorType(
+        name="External temperature sensor",
+        icon=ICON_TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+    ),
+    "light_in": InelsSensorType(
+        name="Light intensity",
+        icon=ICON_LIGHT_IN,
+        unit=LIGHT_LUX,
+        device_class=SensorDeviceClass.ILLUMINANCE,
+    ),
+    "ain": InelsSensorType(
+        name="Analog temperature sensor",
+        icon=ICON_TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+    ),
+    "humidity": InelsSensorType(
+        name="Humidity",
+        icon=ICON_HUMIDITY,
+        unit=PERCENTAGE,
+        device_class=SensorDeviceClass.HUMIDITY,
+    ),
+    "dewpoint": InelsSensorType(
+        name="Dew point",
+        icon=ICON_DEW_POINT,
+        unit=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+    ),
+    "temps": InelsSensorType(
+        name="Temperature sensor",
+        icon=ICON_TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        indexed=True,
+        device_class=SensorDeviceClass.TEMPERATURE,
+    ),
+    "ains": InelsSensorType(
+        name="Analog input",
+        icon=ICON_FLASH,
+        unit=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+    ),
+    "card_id": InelsSensorType(
+        name="Last card ID",
+        icon=ICON_CARD_ID,
+        unit=None,
+        raw_sensor_value=False,
+    ),
+}
+
+
+def _process_value(val: str) -> tuple[str, bool]:
     middle_fs = True
     for k in val[1:-1]:
         if k.capitalize() != "F":
@@ -77,7 +166,7 @@ async def async_setup_entry(
     for device in device_list:
         for key, type_dict in items:
             if hasattr(device.state, key):
-                if type_dict[INDEXED]:
+                if type_dict.indexed:
                     for k in range(len(device.state.__dict__[key])):
                         entities.append(
                             InelsSensor(
@@ -86,10 +175,10 @@ async def async_setup_entry(
                                 index=k,
                                 description=InelsSensorDescription(
                                     key=f"{key}{k}",
-                                    name=f"{type_dict[NAME]} {k+1}",
-                                    icon=type_dict[ICON],
-                                    native_unit_of_measurement=type_dict[UNIT],
-                                    raw_sensor_value=type_dict[RAW_SENSOR_VALUE],
+                                    name=f"{type_dict.name} {k+1}",
+                                    icon=type_dict.icon,
+                                    native_unit_of_measurement=type_dict.unit,
+                                    raw_sensor_value=type_dict.raw_sensor_value,
                                 ),
                             )
                         )
@@ -101,128 +190,13 @@ async def async_setup_entry(
                             index=-1,
                             description=InelsSensorDescription(
                                 key=key,
-                                name=type_dict[NAME],
-                                icon=type_dict[ICON],
-                                native_unit_of_measurement=type_dict[UNIT],
-                                raw_sensor_value=type_dict[RAW_SENSOR_VALUE],
+                                name=type_dict.name,
+                                icon=type_dict.icon,
+                                native_unit_of_measurement=type_dict.unit,
+                                raw_sensor_value=type_dict.raw_sensor_value,
                             ),
                         )
                     )
-
-        # if TEMP_IN in val.ha_value.__dict__:
-        #     entities.append(
-        #         InelsSensor(
-        #             device,
-        #             key="temp_in",
-        #             index=-1,
-        #             description=InelsSensorDescription(
-        #                 key="temp_in",
-        #                 name="Internal temperature sensor",
-        #                 icon=ICON_TEMPERATURE,
-        #                 native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        #             ),
-        #         )
-        #     )
-        # if TEMP_OUT in val.ha_value.__dict__:
-        #     entities.append(
-        #         InelsSensor(
-        #             device,
-        #             key="temp_out",
-        #             index=-1,
-        #             description=InelsSensorDescription(
-        #                 key="temp_out",
-        #                 name="External temperature sensor",
-        #                 icon=ICON_TEMPERATURE,
-        #                 native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        #             ),
-        #         )
-        #     )
-        # if "light_in" in val.ha_value.__dict__:
-        #     entities.append(
-        #         InelsSensor(
-        #             device,
-        #             key="light_in",
-        #             index=-1,
-        #             description=InelsSensorDescription(
-        #                 key="light_in",
-        #                 name="Light intensity",
-        #                 icon=ICON_LIGHT_IN,
-        #                 native_unit_of_measurement=LIGHT_LUX,
-        #             ),
-        #         )
-        #     )
-        # if "ain" in val.ha_value.__dict__:
-        #     entities.append(
-        #         InelsSensor(
-        #             device,
-        #             key="ain",
-        #             index=-1,
-        #             description=InelsSensorDescription(
-        #                 key="ain",
-        #                 name="Analog temperature",
-        #                 icon=ICON_TEMPERATURE,
-        #                 native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        #             ),
-        #         )
-        #     )
-        # if "humidity" in val.ha_value.__dict__:
-        #     entities.append(
-        #         InelsSensor(
-        #             device,
-        #             key="humidity",
-        #             index=-1,
-        #             description=InelsSensorDescription(
-        #                 key="humidity",
-        #                 name="Humidity",
-        #                 icon=ICON_HUMIDITY,
-        #                 native_unit_of_measurement=PERCENTAGE,
-        #             ),
-        #         )
-        #     )
-        # if "dewpoint" in val.ha_value.__dict__:
-        #     entities.append(
-        #         InelsSensor(
-        #             device,
-        #             key="dewpoint",
-        #             index=-1,
-        #             description=InelsSensorDescription(
-        #                 key="dewpoint",
-        #                 name="Dew point",
-        #                 icon=ICON_DEW_POINT,
-        #                 native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        #             ),
-        #         )
-        #     )
-        # if "temps" in val.ha_value.__dict__:
-        #     for k in range(len(val.ha_value.temps)):
-        #         entities.append(
-        #             InelsSensor(
-        #                 device,
-        #                 key="temps",
-        #                 index=k,
-        #                 description=InelsSensorDescription(
-        #                     key=f"temp{k}",
-        #                     name="Temperature",
-        #                     icon=ICON_TEMPERATURE,
-        #                     native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        #                 ),
-        #             )
-        #         )
-        # if "ains" in val.ha_value.__dict__:
-        #     for k in range(len(val.ha_value.ains)):
-        #         entities.append(
-        #             InelsSensor(
-        #                 device,
-        #                 key="ains",
-        #                 index=k,
-        #                 description=InelsSensorDescription(
-        #                     key=f"ain{k}",
-        #                     name="Analog input",
-        #                     icon=ICON_FLASH,
-        #                     native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        #                 ),
-        #             )
-        #         )
     async_add_entities(entities, True)
 
 
@@ -244,7 +218,6 @@ class InelsSensor(InelsBaseEntity, SensorEntity):
 
         self.entity_description = description
         self._attr_unique_id = f"{self._attr_unique_id}-{description.key}"
-
         self._attr_name = f"{self._attr_name} {description.name}"
 
         if self.index != -1:  # with index
@@ -253,8 +226,10 @@ class InelsSensor(InelsBaseEntity, SensorEntity):
             val = self._device.state.__dict__[self.key]
 
         if not self.entity_description.raw_sensor_value and isinstance(val, str):
-            val, self.sensor_error = _process_value_2(val)
+            val, self.sensor_error = _process_value(val)
 
+        self._attr_device_class = self.entity_description.device_class
+        self._attr_icon = self.entity_description.icon
         self._attr_native_value = val
 
     def _callback(self, new_value: Any) -> None:
@@ -267,7 +242,7 @@ class InelsSensor(InelsBaseEntity, SensorEntity):
             val = self._device.state.__dict__[self.key]
 
         if (not self.entity_description.raw_sensor_value) and isinstance(val, str):
-            val, self.sensor_error = _process_value_2(val)
+            val, self.sensor_error = _process_value(val)
 
         self._attr_native_value = val
 

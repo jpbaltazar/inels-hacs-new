@@ -7,6 +7,7 @@ from inelsmqtt.devices import Device
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
+    ATTR_RGB_COLOR,
     ATTR_TRANSITION,
     ColorMode,
     LightEntity,
@@ -16,16 +17,77 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .base_class import InelsBaseEntity
+from .entity import InelsBaseEntity
 from .const import (
     DEVICES,
     DOMAIN,
-    ICON,
-    INELS_LIGHT_TYPES,
+    ICON_FLASH,
+    ICON_LIGHT,
     LOGGER,
-    NAME,
-    SUPPORTED_COLOR_MODES,
 )
+
+
+# LIGHT PLATFORM
+@dataclass
+class InelsLightAlert:
+    """Inels light alert property description."""
+
+    key: str
+    message: str
+
+
+thermal_alert = InelsLightAlert(
+    key="toa", message="Thermal overload on light %s of device %d"
+)
+
+current_alert = InelsLightAlert(
+    key="toa", message="Current overload on light %s of device %d"
+)
+
+dali_comm = InelsLightAlert(
+    key="alert_dali_communication",
+    message="Dali communication error on light %s of device %d",
+)
+
+dali_power = InelsLightAlert(
+    key="alert_dali_communication", message="Dali power error on light %s of device %d"
+)
+
+aout_current = InelsLightAlert(
+    key="aout_coa", message="Current overload of AOUT %s of device %d"
+)
+
+
+@dataclass
+class InelsLightType:
+    """Light type property description."""
+
+    name: str
+    color_modes: list[ColorMode]
+    icon: str = ICON_LIGHT
+    alerts: list[InelsLightAlert] | None = None
+
+
+INELS_LIGHT_TYPES: dict[str, InelsLightType] = {
+    "simple_light": InelsLightType(name="Light", color_modes=[ColorMode.BRIGHTNESS]),
+    "light_coa_toa": InelsLightType(
+        name="Light",
+        color_modes=[ColorMode.BRIGHTNESS],
+        alerts=[current_alert, thermal_alert],
+    ),
+    "dali": InelsLightType(
+        name="DALI", color_modes=[ColorMode.BRIGHTNESS], alerts=[dali_comm, dali_power]
+    ),
+    "aout": InelsLightType(
+        name="Analog output",
+        icon=ICON_FLASH,
+        color_modes=[ColorMode.BRIGHTNESS],
+        alerts=[aout_current],
+    ),
+    "rgb": InelsLightType(
+        name="RGB light", color_modes=[ColorMode.BRIGHTNESS, ColorMode.RGB]
+    ),
+}
 
 
 async def async_setup_entry(
@@ -49,9 +111,9 @@ async def async_setup_entry(
                             index=0,
                             description=InelsLightDescription(
                                 key=key,
-                                name=type_dict[NAME],
-                                icon=type_dict[ICON],
-                                color_modes=type_dict[SUPPORTED_COLOR_MODES],
+                                name=type_dict.name,
+                                icon=type_dict.icon,
+                                color_modes=type_dict.color_modes,
                             ),
                         )
                     )
@@ -64,9 +126,9 @@ async def async_setup_entry(
                                 index=k,
                                 description=InelsLightDescription(
                                     key=f"{key}{k}",
-                                    name=f"{type_dict[NAME]} {k+1}",
-                                    icon=type_dict[ICON],
-                                    color_modes=type_dict[SUPPORTED_COLOR_MODES],
+                                    name=f"{type_dict.name} {k+1}",
+                                    icon=type_dict.icon,
+                                    color_modes=type_dict.color_modes,
                                 ),
                             )
                         )
@@ -79,6 +141,7 @@ class InelsLightDescription(LightEntityDescription):
     """iNELS light description."""
 
     color_modes: list[ColorMode] = field(default_factory=list)
+    alerts: list[InelsLightAlert] | None = None
 
 
 class InelsLight(InelsBaseEntity, LightEntity):
@@ -101,7 +164,7 @@ class InelsLight(InelsBaseEntity, LightEntity):
         )
         self._entity_description = description
 
-        self._attr_unique_id = f"{self._attr_unique_id}-{description.name}-{self.index}"
+        self._attr_unique_id = f"{self._attr_unique_id}-{description.key}"
 
         self._attr_name = f"{self._attr_name} {description.name}"
 
@@ -111,32 +174,22 @@ class InelsLight(InelsBaseEntity, LightEntity):
     @property
     def available(self) -> bool:
         """If it is available."""
-        # TODO redo this part
-        if self.key == "out":
-            if hasattr(self._device.state, "toa"):
-                if self._device.state.toa[self.index]:
-                    LOGGER.warning("Thermal overload on light %s", self.name)
-                    return False
-            if hasattr(self._device.state, "coa"):
-                if self._device.state.coa[self.index]:
-                    LOGGER.warning("Current overload on light %s", self.name)
-                    return False
-        elif self.key == "dali":
-            if hasattr(self._device.state, "alert_dali_power"):
-                if self._device.state.alert_dali_power:
-                    LOGGER.warning("Alert dali power")
-                    return False
-            if hasattr(self._device.state, "alert_dali_communication"):
-                if self._device.state.alert_dali_communication:
-                    LOGGER.warning("Alert dali communication")
-                    return False
-
+        if self._entity_description.alerts:
+            last_state = self._device.last_values.ha_value.__dict__[self.key][
+                self.index
+            ]
+            for alert in self._entity_description.alerts:
+                if hasattr(self._device.state, alert.key):
+                    if self._device.state.__dict__[alert.key]:
+                        if not last_state.__dict__[alert.key]:
+                            LOGGER.warning(alert.message, self.name, self._device_id)
+                        return False
         return super().available
 
     @property
     def is_on(self) -> bool:
         """Return true if light is on."""
-        return self._device.state.__dict__[self.key][self.index] > 0
+        return self._device.state.__dict__[self.key][self.index].brightness > 0
 
     @property
     def icon(self) -> str | None:
@@ -148,7 +201,7 @@ class InelsLight(InelsBaseEntity, LightEntity):
         """Light brightness."""
         return cast(
             int,
-            self._device.state.__dict__[self.key][self.index] * 2.55,
+            self._device.state.__dict__[self.key][self.index].brightness * 2.55,
         )
 
     async def async_turn_off(self, **kwargs: Any) -> None:
@@ -163,7 +216,7 @@ class InelsLight(InelsBaseEntity, LightEntity):
         else:
             # mount device ha value
             ha_val = self._device.get_value().ha_value
-            ha_val.__dict__[self.key][self.index] = 0
+            ha_val.__dict__[self.key][self.index].brightness = 0
             await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
@@ -171,34 +224,30 @@ class InelsLight(InelsBaseEntity, LightEntity):
         if not self._device:
             return
 
-        # if ATTR_RGB_COLOR in kwargs:
-        #     rgbb = tuple(int(channel / 2.55) for channel in kwargs[ATTR_RGB_COLOR])
+        if ATTR_RGB_COLOR in kwargs:
+            rgb = kwargs[ATTR_RGB_COLOR]
 
-        #     ha_val = self._device.get_value().ha_value
-        #     ha_val.__dict__[self.key][self.index].r = rgbb[0]
-        #     ha_val.__dict__[self.key][self.index].g = rgbb[1]
-        #     ha_val.__dict__[self.key][self.index].b = rgbb[2]
-        #     ha_val.__dict__[self.key][self.index].brightness = rgbb[3]
+            ha_val = self._device.get_value().ha_value
+            ha_val.__dict__[self.key][self.index].r = rgb[0]
+            ha_val.__dict__[self.key][self.index].g = rgb[1]
+            ha_val.__dict__[self.key][self.index].b = rgb[2]
 
-        #     await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
         if ATTR_BRIGHTNESS in kwargs:
             brightness = int(kwargs[ATTR_BRIGHTNESS] / 2.55)
             brightness = min(brightness, 100)
 
             ha_val = self._device.get_value().ha_value
-            ha_val.__dict__[self.key][self.index] = brightness
-
-            await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
+            ha_val.__dict__[self.key][self.index].brightness = brightness
         else:
             ha_val = self._device.get_value().ha_value
 
             last_val = self._device.last_values.ha_value
 
             # uses previously observed value if it isn't 0
-            ha_val.__dict__[self.key][self.index] = (
+            ha_val.__dict__[self.key][self.index].brightness = (
                 100
-                if last_val.__dict__[self.key][self.index] == 0
-                else last_val.__dict__[self.key][self.index]
+                if last_val.__dict__[self.key][self.index].brightness == 0
+                else last_val.__dict__[self.key][self.index].brightness
             )
 
-            await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
+        await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)

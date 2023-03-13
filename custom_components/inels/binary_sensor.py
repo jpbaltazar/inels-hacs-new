@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from inelsmqtt.devices import Device
 
 from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
@@ -13,18 +14,81 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .base_class import InelsBaseEntity
+from .entity import InelsBaseEntity
 from .const import (
-    BINARY_INPUT,
-    DEVICE_CLASS,
     DEVICES,
     DOMAIN,
-    ICON,
-    INELS_BINARY_SENSOR_TYPES,
+    ICON_BATTERY,
+    ICON_BINARY_INPUT,
+    ICON_CARD_PRESENT,
+    ICON_EYE,
+    ICON_HEAT_WAVE,
+    ICON_HOME_FLOOD,
+    ICON_MOTION,
+    ICON_PROXIMITY,
+    ICON_SNOWFLAKE,
     LOGGER,
-    INDEXED,
-    NAME,
 )
+
+# BINARY SENSOR PLATFORM
+@dataclass
+class InelsBinarySensorType:
+    """Binary sensor type property description"""
+
+    name: str
+    icon: str
+    is_binary_input: bool = False
+    indexed: bool = False
+    device_class: BinarySensorDeviceClass = None
+
+
+INELS_BINARY_SENSOR_TYPES: dict[str, InelsBinarySensorType] = {
+    "low_battery": InelsBinarySensorType(
+        name="Battery",
+        icon=ICON_BATTERY,
+        device_class=BinarySensorDeviceClass.BATTERY,
+    ),
+    "prox": InelsBinarySensorType(
+        name="Proximity Sensor",
+        icon=ICON_PROXIMITY,
+        device_class=BinarySensorDeviceClass.MOVING,
+    ),
+    "input": InelsBinarySensorType(
+        name="Binary input sensor",
+        icon=ICON_BINARY_INPUT,
+        is_binary_input=True,
+        indexed=True,
+    ),
+    "heating_out": InelsBinarySensorType(
+        name="Heating",
+        icon=ICON_HEAT_WAVE,
+        device_class=BinarySensorDeviceClass.RUNNING,
+    ),
+    "cooling_out": InelsBinarySensorType(
+        name="Cooling",
+        icon=ICON_SNOWFLAKE,
+        device_class=BinarySensorDeviceClass.RUNNING,
+    ),
+    "detected": InelsBinarySensorType(
+        name="Detector",
+        icon=ICON_EYE,
+    ),
+    "motion": InelsBinarySensorType(
+        name="Motion detector",
+        icon=ICON_MOTION,
+        device_class=BinarySensorDeviceClass.MOTION,
+    ),
+    "flooded": InelsBinarySensorType(
+        name="Flooded",
+        icon=ICON_HOME_FLOOD,
+        device_class=BinarySensorDeviceClass.MOISTURE,
+    ),
+    "card_present": InelsBinarySensorType(
+        name="Card present",
+        icon=ICON_CARD_PRESENT,
+        device_class=BinarySensorDeviceClass.OCCUPANCY,
+    ),
+}
 
 
 @dataclass
@@ -53,12 +117,12 @@ async def async_setup_entry(
     for device in device_list:
         for key, type_dict in items:
             if hasattr(device.state, key):
-                if type_dict[BINARY_INPUT]:
+                if type_dict.is_binary_input:
                     binary_sensor_type = InelsBinaryInputSensor
                 else:
                     binary_sensor_type = InelsBinarySensor
 
-                if not type_dict[INDEXED]:
+                if not type_dict.indexed:
                     entities.append(
                         binary_sensor_type(
                             device=device,
@@ -66,9 +130,9 @@ async def async_setup_entry(
                             index=-1,
                             description=InelsBinarySensorEntityDescription(
                                 key=key,
-                                name=type_dict[NAME],
-                                icon=type_dict[ICON],
-                                device_class=type_dict[DEVICE_CLASS],
+                                name=type_dict.name,
+                                icon=type_dict.icon,
+                                device_class=type_dict.device_class,
                             ),
                         )
                     )
@@ -81,9 +145,9 @@ async def async_setup_entry(
                                 index=k,
                                 description=InelsBinarySensorEntityDescription(
                                     key=f"{key}{k}",
-                                    name=f"{type_dict[NAME]} {k+1}",
-                                    icon=type_dict[ICON],
-                                    device_class=type_dict[DEVICE_CLASS],
+                                    name=f"{type_dict.name} {k+1}",
+                                    icon=type_dict.icon,
+                                    device_class=type_dict.device_class,
                                 ),
                             )
                         )

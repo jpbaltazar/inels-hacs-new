@@ -12,15 +12,35 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .base_class import InelsBaseEntity
+from .entity import InelsBaseEntity
 from .const import (
     DEVICES,
     DOMAIN,
     FAN_SPEED_DICT,
+    ICON_FAN,
     SELECT_OPTIONS_DICT,
     SELECT_OPTIONS_ICON,
 )
 
+# SELECT PLATFORM
+@dataclass
+class InelsSelectType:
+    """Select type property description."""
+
+    name: str
+    icon: str
+    options: list[str]
+    options_dict: dict[str, int]
+
+
+INELS_SELECT_TYPES: dict[str, InelsSelectType] = {
+    "fan_speed": InelsSelectType(
+        name="Fan speed",
+        icon=ICON_FAN,
+        options=["Off", "Speed 1", "Speed 2", "Speed 3"],
+        options_dict={"Off": 0, "Speed 1": 1, "Speed 2": 2, "Speed 3": 3},
+    ),
+}
 
 @dataclass
 class InelsSelectEntityDescriptionMixin:

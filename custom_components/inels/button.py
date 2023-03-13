@@ -5,6 +5,23 @@ from dataclasses import dataclass
 from typing import Any
 
 from inelsmqtt.devices import Device
+from inelsmqtt.const import (
+    GRT3_50,
+    GSB3_90SX,
+    WSB3_20,
+    WSB3_20H,
+    WSB3_40,
+    WSB3_40H,
+    GCR3_11,
+    GCH3_31,
+    GSP3_100,
+    GDB3_10,
+    GSB3_40SX,
+    GSB3_60SX,
+    GSB3_20SX,
+    GBP3_60,
+    IDRT3_1,
+)
 
 from homeassistant.components.button import (
     SERVICE_PRESS,
@@ -18,8 +35,88 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .base_class import InelsBaseEntity
-from .const import DEVICES, DOMAIN, ICON_BUTTON, ICON_MINUS, ICON_PLUS
+from .entity import InelsBaseEntity
+from .const import (
+    DEVICES,
+    DOMAIN,
+    ICON_BUTTON,
+    ICON_ECO,
+    ICON_FAN_1,
+    ICON_FAN_2,
+    ICON_FAN_3,
+    ICON_MINUS,
+    ICON_PLUS,
+    ICON_CYCLE,
+)
+
+
+# BUTTON PLATFORM
+@dataclass
+class InelsButtonType:
+    """Button type property description"""
+
+    name: str
+    icon: str = ICON_BUTTON
+    entity_category: EntityCategory = EntityCategory.CONFIG
+
+
+INELS_BUTTON_TYPES: dict[str, InelsButtonType] = {
+    "btn": InelsButtonType(name="Button"),
+    "din": InelsButtonType(name="Digital input"),
+    "sw": InelsButtonType(name="Switch"),
+    "plus": InelsButtonType(name="Plus", icon=ICON_PLUS),
+    "minus": InelsButtonType(name="Minus", icon=ICON_MINUS),
+    "interface": InelsButtonType(name="Inteface"),  # special case
+}
+
+
+plus = InelsButtonType(name="Plus", icon=ICON_PLUS)
+minus = InelsButtonType(name="Minus", icon=ICON_MINUS)
+
+ROWS_3 = ["Top", "Middle", "Bottom"]
+COLUMNS_3 = ["Left", "Center", "Right"]
+ROWS_2 = ["Top", "Bottom"]
+COLUMNS_2 = ["Left", "Right"]
+
+INELS_BUTTON_INTERFACE: dict[str, list[InelsButtonType]] = {
+    GRT3_50: [
+        InelsButtonType(name="Cycle", icon=ICON_CYCLE),
+        InelsButtonType(name="Fan 1", icon=ICON_FAN_1),
+        InelsButtonType(name="Fan 2", icon=ICON_FAN_2),
+        InelsButtonType(name="Eco", icon=ICON_ECO),
+        InelsButtonType(name="Fan 3", icon=ICON_FAN_3),
+        plus,
+        minus,
+    ],
+    GSB3_90SX: [
+        InelsButtonType(name=f"{ROWS_3[i%3]} {COLUMNS_3[int(i/3)]}") for i in range(9)
+    ],
+    WSB3_20: [InelsButtonType(name=ROWS_2[int(i)]) for i in range(2)],
+    WSB3_20H: [InelsButtonType(name=ROWS_2[int(i)]) for i in range(2)],
+    WSB3_40: [
+        InelsButtonType(name=f"{ROWS_2[i%2]} {COLUMNS_2[int(i/2)]}") for i in range(2)
+    ],
+    WSB3_40H: [
+        InelsButtonType(name=f"{ROWS_2[i%2]} {COLUMNS_2[int(i/2)]}") for i in range(2)
+    ],
+    GCR3_11: [InelsButtonType(name=COLUMNS_3[i]) for i in range(3)],
+    GCH3_31: [InelsButtonType(name=COLUMNS_3[i]) for i in range(3)],
+    GSP3_100: [
+        InelsButtonType(name=f"{ROWS_2[i%2]} {int(i/2) + 1}") for i in range(10)
+    ],
+    GDB3_10: [InelsButtonType(name=COLUMNS_3[i]) for i in range(3)],
+    GSB3_40SX: [
+        InelsButtonType(name=f"{ROWS_2[i%2]} {COLUMNS_2[int(i/2)]}") for i in range(2)
+    ],
+    GSB3_60SX: [
+        InelsButtonType(name=f"{ROWS_2[i%2]} {COLUMNS_3[int(i/2)]}") for i in range(2)
+    ],
+    GSB3_20SX: [InelsButtonType(name=ROWS_2[i]) for i in range(2)],
+    GBP3_60: [
+        InelsButtonType(name=f"{ROWS_2[i%2]} {COLUMNS_3[int(i/2)]}") for i in range(6)
+    ],
+    IDRT3_1: [InelsButtonType(name="Down"), InelsButtonType(name="Up")],
+}
 
 
 @dataclass
@@ -34,71 +131,51 @@ async def async_setup_entry(
 ) -> None:
     """Load iNELS buttons from config entry."""
     device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
+    items = INELS_BUTTON_TYPES.items()
 
     entities: list[InelsBaseEntity] = []
-
     for device in device_list:
-        val = device.get_value()
-        if hasattr(val.ha_value, "btn"):
-            for k in range(len(val.ha_value.btn)):
-                entities.append(
-                    InelsButton(
-                        device=device,
-                        key="btn",
-                        index=k,
-                        description=InelsButtonDescription(
-                            key=f"btn{k+1}",
-                            name=f"Button {k+1}",
-                            icon=ICON_BUTTON,
-                            entity_category=EntityCategory.CONFIG,
-                        ),
-                    )
-                )
-        if hasattr(val.ha_value, "din"):
-            for k in range(len(val.ha_value.din)):
-                entities.append(
-                    InelsButton(
-                        device=device,
-                        key="din",
-                        index=k,
-                        description=InelsButtonDescription(
-                            key=f"din{k+1}",
-                            name=f"Digital input {k+1}",
-                            icon=ICON_BUTTON,
-                            entity_category=EntityCategory.CONFIG,
-                        ),
-                    )
-                )
-        if hasattr(val.ha_value, "sw"):
-            for k in range(len(val.ha_value.sw)):
-                entities.append(
-                    InelsButton(
-                        device=device,
-                        key="sw",
-                        index=k,
-                        description=InelsButtonDescription(
-                            key=f"sw{k+1}",
-                            name=f"Switch {k+1}",
-                            icon=ICON_BUTTON,
-                            entity_category=EntityCategory.CONFIG,
-                        ),
-                    )
-                )
-        if hasattr(val.ha_value, "plusminus"):
-            for k in range(len(val.ha_value.plusminus)):
-                entities.append(
-                    InelsButton(
-                        device=device,
-                        key="plusminus",
-                        index=k,
-                        description=InelsButtonDescription(
-                            key=f"plusminus{k+1}",
-                            name="Plus" if k == 0 else "Minus",
-                            icon=ICON_PLUS if k == 0 else ICON_MINUS,
-                            entity_category=EntityCategory.CONFIG,
-                        ),
-                    )
-                )
+        val = device.state
+        for key, type_dict in items:
+            if hasattr(device.state, key):
+                for k in range(len(val.__dict__[key])):
+                    if key == "interface":  # special case
+                        btn_type = INELS_BUTTON_INTERFACE.get(device.inels_type)
+                        name = f"Interface {k}"
+                        icon = ICON_BUTTON
+                        category = EntityCategory.CONFIG
+                        if btn_type and (k < len(btn_type)):
+                            name = btn_type[k].name
+                            icon = btn_type[k].icon
+                            category = btn_type[k].entity_category
+
+                        entities.append(
+                            InelsButton(
+                                device=device,
+                                key="interface",
+                                index=k,
+                                description=InelsButtonDescription(
+                                    key=f"interface{k}",
+                                    name=name,
+                                    icon=icon,
+                                    entity_category=category,
+                                ),
+                            )
+                        )
+                    else:
+                        entities.append(
+                            InelsButton(
+                                device=device,
+                                key=key,
+                                index=k,
+                                description=InelsButtonDescription(
+                                    key=f"{key}{k+1}",
+                                    name=f"{type_dict.name} {k+1}",
+                                    icon=type_dict.icon,
+                                    entity_category=type_dict.entity_category,
+                                ),
+                            )
+                        )
 
     async_add_entities(entities)
 
@@ -116,21 +193,13 @@ class InelsButton(InelsBaseEntity, ButtonEntity):
         super().__init__(device=device, key=key, index=index)
         self.entity_description = description
 
-        self._attr_unique_id = f"{self._attr_unique_id}-{description.name}"
+        self._attr_unique_id = f"{self._attr_unique_id}-{description.key}"
 
         if description.name:
             self._attr_name = f"{self._attr_name} {description.name}"
 
     def _callback(self, new_value: Any) -> None:
         super()._callback(new_value)
-        if self.entity_description.name:
-            if self.key != "plusminus":
-                entity_id = f"{Platform.BUTTON}.{self._device_id}_{self.entity_description.name.lower().replace(' ', '_')}"
-            else:
-                name = "plus" if self.index == 1 else "minus"
-                entity_id = f"{Platform.BUTTON}.{self._device_id}_{name}"
-        else:
-            entity_id = f"{Platform.BUTTON}.{self._device_id}_{self.key}_{self.index}"
 
         curr_val = self._device.state
         last_val = self._device.last_values.ha_value
@@ -142,7 +211,7 @@ class InelsButton(InelsBaseEntity, ButtonEntity):
             self.hass.services.call(
                 Platform.BUTTON,
                 SERVICE_PRESS,
-                {ATTR_ENTITY_ID: entity_id},
+                {ATTR_ENTITY_ID: self.entity_id},
                 True,
                 self._context,
             )

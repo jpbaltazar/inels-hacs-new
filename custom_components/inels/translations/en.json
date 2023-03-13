@@ -16,15 +16,15 @@
                     "username": "User name",
                     "password": "Password"
                 },
-                "title": "iNELS MQTT broker",
-                "description": "Please connect your MQTT broker to load iNELS components."
+                "description": "Please connect your MQTT broker to load iNELS components.",
+                "title": "iNELS MQTT broker"
             },
             "confirm": {
                 "data": {
                     "discovery": "Enable discovery"
                 },
-                "title": "MQTT broker via add-on",
-                "description": "Do you want to configure Home Assistant to connect to the MQTT broker by the add-on {addon}?"
+                "description": "Do you want to configure Home Assistant to connect to the MQTT broker by the add-on {addon}?",
+                "title": "MQTT broker via add-on"
             }
         }
     },
@@ -36,12 +36,12 @@
             "setup": {
                 "data": {
                     "host": "Broker",
+                    "password": "Password",
                     "port": "Port",
-                    "username": "User name",
-                    "password": "Password"
+                    "username": "User name"
                 },
-                "title": "iNELS MQTT broker options",
-                "description": "Please enter MQTT broker connection information."
+                "description": "Please enter MQTT broker connection information.",
+                "title": "iNELS MQTT broker options"
             }
         }
     }

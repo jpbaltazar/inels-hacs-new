@@ -75,6 +75,6 @@ class InelsBaseEntity(Entity):
         return self._key
 
     @property
-    def index(self) -> str:
+    def index(self) -> int:
         """Return the index of the variable list to read from. '-1' for no index."""
         return self._index
