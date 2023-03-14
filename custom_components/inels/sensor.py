@@ -22,11 +22,13 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     LIGHT_LUX,
     PERCENTAGE,
+    Platform,
     UnitOfElectricPotential,
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import slugify
 
 from .entity import InelsBaseEntity
 from .const import (
@@ -39,6 +41,7 @@ from .const import (
     ICON_LIGHT_IN,
     ICON_TEMPERATURE,
     LOGGER,
+    OLD_ENTITIES,
 )
 
 
@@ -160,8 +163,11 @@ async def async_setup_entry(
 ) -> None:
     """Load iNELS switch.."""
     device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
-    items = INELS_SENSOR_TYPES.items()
+    old_entities: list[str] = hass.data[DOMAIN][config_entry.entry_id][
+        OLD_ENTITIES
+    ].get(Platform.SENSOR)
 
+    items = INELS_SENSOR_TYPES.items()
     entities: list[InelsBaseEntity] = []
     for device in device_list:
         for key, type_dict in items:
@@ -199,6 +205,13 @@ async def async_setup_entry(
                     )
     async_add_entities(entities, True)
 
+    if old_entities:
+        for entity in entities:
+            if entity.entity_id in old_entities:
+                old_entities.pop(old_entities.index(entity.entity_id))
+
+    hass.data[DOMAIN][config_entry.entry_id][Platform.SENSOR] = old_entities
+
 
 class InelsSensor(InelsBaseEntity, SensorEntity):
     """Platform class for Home assistant, bus version."""
@@ -217,7 +230,9 @@ class InelsSensor(InelsBaseEntity, SensorEntity):
         super().__init__(device=device, key=key, index=index)
 
         self.entity_description = description
-        self._attr_unique_id = f"{self._attr_unique_id}-{description.key}"
+
+        self._attr_unique_id = slugify(f"{self._attr_unique_id}_{description.key}")
+        self.entity_id = f"{Platform.SENSOR}.{self._attr_unique_id}"
         self._attr_name = f"{self._attr_name} {description.name}"
 
         if self.index != -1:  # with index

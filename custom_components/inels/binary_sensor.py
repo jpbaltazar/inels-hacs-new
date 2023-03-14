@@ -11,8 +11,10 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import slugify
 
 from .entity import InelsBaseEntity
 from .const import (
@@ -28,7 +30,9 @@ from .const import (
     ICON_PROXIMITY,
     ICON_SNOWFLAKE,
     LOGGER,
+    OLD_ENTITIES,
 )
+
 
 # BINARY SENSOR PLATFORM
 @dataclass
@@ -110,10 +114,12 @@ async def async_setup_entry(
 ) -> None:
     """Load iNELS binary sensor."""
     device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
-    entities: list[InelsBaseEntity] = []
+    old_entities: list[str] = hass.data[DOMAIN][config_entry.entry_id][
+        OLD_ENTITIES
+    ].get(Platform.BINARY_SENSOR)
 
     items = INELS_BINARY_SENSOR_TYPES.items()
-
+    entities: list[InelsBaseEntity] = []
     for device in device_list:
         for key, type_dict in items:
             if hasattr(device.state, key):
@@ -154,6 +160,13 @@ async def async_setup_entry(
 
     async_add_entities(entities, True)
 
+    if old_entities:
+        for entity in entities:
+            if entity.entity_id in old_entities:
+                old_entities.pop(old_entities.index(entity.entity_id))
+
+    hass.data[DOMAIN][config_entry.entry_id][Platform.BINARY_SENSOR] = old_entities
+
 
 class InelsBinarySensor(InelsBaseEntity, BinarySensorEntity):
     """The platform class for binary sensors for home assistant."""
@@ -172,8 +185,9 @@ class InelsBinarySensor(InelsBaseEntity, BinarySensorEntity):
 
         self.entity_description = description
 
-        self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.key}"
-        self._attr_name = f"{self._attr_name} {self.entity_description.name}"
+        self._attr_unique_id = slugify(f"{self._attr_unique_id}_{description.key}")
+        self.entity_id = f"{Platform.BINARY_SENSOR}.{self._attr_unique_id}"
+        self._attr_name = f"{self._attr_name} {description.name}"
 
     @property
     def unique_id(self) -> str | None:
@@ -215,8 +229,9 @@ class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
 
         self.entity_description = description
 
-        self._attr_unique_id = f"{self._attr_unique_id}-{self.entity_description.key}"
-        self._attr_name = f"{self._attr_name} {self.entity_description.name}"
+        self._attr_unique_id = slugify(f"{self._attr_unique_id}_{description.key}")
+        self.entity_id = f"{Platform.BINARY_SENSOR}.{self._attr_unique_id}"
+        self._attr_name = f"{self._attr_name} {description.name}"
 
     @property
     def available(self) -> bool:

@@ -9,8 +9,10 @@ from inelsmqtt.devices import Device
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import slugify
 
 from .entity import InelsBaseEntity
 from .const import (
@@ -18,9 +20,11 @@ from .const import (
     DOMAIN,
     FAN_SPEED_DICT,
     ICON_FAN,
+    OLD_ENTITIES,
     SELECT_OPTIONS_DICT,
     SELECT_OPTIONS_ICON,
 )
+
 
 # SELECT PLATFORM
 @dataclass
@@ -41,6 +45,7 @@ INELS_SELECT_TYPES: dict[str, InelsSelectType] = {
         options_dict={"Off": 0, "Speed 1": 1, "Speed 2": 2, "Speed 3": 3},
     ),
 }
+
 
 @dataclass
 class InelsSelectEntityDescriptionMixin:
@@ -73,6 +78,10 @@ async def async_setup_entry(
 ) -> None:
     """Load iNELS select entity."""
     device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
+    old_entities: list[str] = hass.data[DOMAIN][config_entry.entry_id][
+        OLD_ENTITIES
+    ].get(Platform.SELECT)
+
     entities: list[InelsSelect] = []
 
     for device in device_list:
@@ -92,6 +101,13 @@ async def async_setup_entry(
             )
     async_add_entities(entities, True)
 
+    if old_entities:
+        for entity in entities:
+            if entity.entity_id in old_entities:
+                old_entities.pop(old_entities.index(entity.entity_id))
+
+    hass.data[DOMAIN][config_entry.entry_id][Platform.SELECT] = old_entities
+
 
 class InelsSelect(InelsBaseEntity, SelectEntity):
     """The platform class for select for home assistant."""
@@ -109,14 +125,9 @@ class InelsSelect(InelsBaseEntity, SelectEntity):
         super().__init__(device=device, key=key, index=index)
         self.entity_description = description
 
-        if self.index != -1:
-            self._attr_unique_id = f"{self._attr_unique_id}-{self.key}-{self.index}"
-            self._attr_name = (
-                f"{self._attr_name} {self.entity_description.name} {self.index + 1}"
-            )
-        else:
-            self._attr_unique_id = f"{self._attr_unique_id}-{self.key}"
-            self._attr_name = f"{self._attr_name} {self.entity_description.name}"
+        self._attr_unique_id = slugify(f"{self._attr_unique_id}_{description.key}")
+        self.entity_id = f"{Platform.SELECT}.{self._attr_unique_id}"
+        self._attr_name = f"{self._attr_name} {self.entity_description.name}"
 
     @property
     def unique_id(self) -> str | None:
@@ -139,10 +150,6 @@ class InelsSelect(InelsBaseEntity, SelectEntity):
     def current_option(self) -> str | None:
         """Return the current selected option."""
         state = self._device.state
-        if self.index is not None:
-            option = state.__dict__[self.key][self.index]
-
-            return SELECT_OPTIONS_DICT[self.key][option]
         option = state.__dict__[self.key]
         return SELECT_OPTIONS_DICT[self.key][state.__dict__[self.key]]
 

@@ -34,6 +34,7 @@ from homeassistant.const import ATTR_ENTITY_ID, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import slugify
 
 from .entity import InelsBaseEntity
 from .const import (
@@ -47,6 +48,7 @@ from .const import (
     ICON_MINUS,
     ICON_PLUS,
     ICON_CYCLE,
+    OLD_ENTITIES,
 )
 
 
@@ -131,8 +133,11 @@ async def async_setup_entry(
 ) -> None:
     """Load iNELS buttons from config entry."""
     device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
-    items = INELS_BUTTON_TYPES.items()
+    old_entities: list[str] = hass.data[DOMAIN][config_entry.entry_id][
+        OLD_ENTITIES
+    ].get(Platform.BUTTON)
 
+    items = INELS_BUTTON_TYPES.items()
     entities: list[InelsBaseEntity] = []
     for device in device_list:
         val = device.state
@@ -179,6 +184,13 @@ async def async_setup_entry(
 
     async_add_entities(entities)
 
+    if old_entities:
+        for entity in entities:
+            if entity.entity_id in old_entities:
+                old_entities.pop(old_entities.index(entity.entity_id))
+
+    hass.data[DOMAIN][config_entry.entry_id][Platform.BUTTON] = old_entities
+
 
 class InelsButton(InelsBaseEntity, ButtonEntity):
     """Button switch that can be toggled by MQTT. Specific version for Bus devices."""
@@ -193,8 +205,8 @@ class InelsButton(InelsBaseEntity, ButtonEntity):
         super().__init__(device=device, key=key, index=index)
         self.entity_description = description
 
-        self._attr_unique_id = f"{self._attr_unique_id}-{description.key}"
-
+        self._attr_unique_id = slugify(f"{self._attr_unique_id}_{description.key}")
+        self.entity_id = f"{Platform.BUTTON}.{self._attr_unique_id}"
         if description.name:
             self._attr_name = f"{self._attr_name} {description.name}"
 

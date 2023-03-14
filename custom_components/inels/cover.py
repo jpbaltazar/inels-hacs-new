@@ -15,8 +15,10 @@ from homeassistant.components.cover import (
     CoverEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import slugify
 
 from .entity import InelsBaseEntity
 from .const import (
@@ -24,7 +26,9 @@ from .const import (
     DOMAIN,
     ICON_SHUTTER_CLOSED,
     ICON_SHUTTER_OPEN,
+    OLD_ENTITIES,
 )
+
 
 @dataclass
 class InelsShutterType:
@@ -49,6 +53,7 @@ INELS_SHUTTERS_TYPES: dict[str, InelsShutterType] = {
     ),
 }
 
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
@@ -56,8 +61,11 @@ async def async_setup_entry(
 ) -> None:
     """Load iNELS cover from config entry."""
     device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
-    items = INELS_SHUTTERS_TYPES.items()
+    old_entities: list[str] = hass.data[DOMAIN][config_entry.entry_id][
+        OLD_ENTITIES
+    ].get(Platform.COVER)
 
+    items = INELS_SHUTTERS_TYPES.items()
     entities: list[InelsBaseEntity] = []
     for device in device_list:
         for key, type_dict in items:
@@ -92,6 +100,13 @@ async def async_setup_entry(
 
     async_add_entities(entities, False)
 
+    if old_entities:
+        for entity in entities:
+            if entity.entity_id in old_entities:
+                old_entities.pop(old_entities.index(entity.entity_id))
+
+    hass.data[DOMAIN][config_entry.entry_id][Platform.COVER] = old_entities
+
 
 @dataclass
 class InelsCoverEntityDescription(CoverEntityDescription):
@@ -118,7 +133,8 @@ class InelsCover(InelsBaseEntity, CoverEntity):
 
         self._attr_device_class = CoverDeviceClass.SHUTTER
 
-        self._attr_unique_id = f"{self._attr_unique_id}-{description.key}"
+        self._attr_unique_id = slugify(f"{self._attr_unique_id}_{description.key}")
+        self.entity_id = f"{Platform.COVER}.{self._attr_unique_id}"
         self._attr_name = f"{self._attr_name} {description.name}"
 
         self._attr_supported_features = description.supported_features

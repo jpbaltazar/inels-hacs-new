@@ -14,9 +14,10 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
+from homeassistant.const import ATTR_TEMPERATURE, Platform, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import slugify
 
 from .entity import InelsBaseEntity
 from .const import (
@@ -24,6 +25,7 @@ from .const import (
     DEFAULT_MIN_TEMP,
     DEVICES,
     DOMAIN,
+    OLD_ENTITIES,
 )
 
 OPERATION_LIST = [
@@ -32,6 +34,7 @@ OPERATION_LIST = [
 ]
 
 SUPPORT_FLAGS_CLIMATE = ClimateEntityFeature.TARGET_TEMPERATURE
+
 
 # CLIMATE PLATFORM
 @dataclass
@@ -55,10 +58,12 @@ async def async_setup_entry(
 ) -> None:
     """Load iNELS water heater from config entry."""
     device_list: list[Device] = hass.data[DOMAIN][config_entry.entry_id][DEVICES]
-    entities: list[InelsBaseEntity] = []
+    old_entities: list[str] = hass.data[DOMAIN][config_entry.entry_id][
+        OLD_ENTITIES
+    ].get(Platform.CLIMATE)
 
     items = INELS_CLIMATE_TYPES.items()
-
+    entities: list[InelsBaseEntity] = []
     for device in device_list:
         for key, type_dict in items:
             if hasattr(device.state, key):
@@ -74,6 +79,13 @@ async def async_setup_entry(
                 )
 
     async_add_entities(entities)
+
+    if old_entities:
+        for entity in entities:
+            if entity.entity_id in old_entities:
+                old_entities.pop(old_entities.index(entity.entity_id))
+
+    hass.data[DOMAIN][config_entry.entry_id][Platform.CLIMATE] = old_entities
 
 
 @dataclass
@@ -101,7 +113,8 @@ class InelsClimate(InelsBaseEntity, ClimateEntity):
         self._attr_max_temp = DEFAULT_MAX_TEMP
         self._attr_min_temp = DEFAULT_MIN_TEMP
 
-        self._attr_unique_id = f"{self._attr_unique_id}-{self.key}"
+        self._attr_unique_id = slugify(f"{self._attr_unique_id}_{description.key}")
+        self.entity_id = f"{Platform.CLIMATE}.{self._attr_unique_id}"
         self._attr_name = f"{self._attr_name} {description.name}"
 
     @property
