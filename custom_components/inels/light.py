@@ -217,6 +217,20 @@ class InelsLight(InelsBaseEntity, LightEntity):
             self._device.state.__dict__[self.key][self.index].brightness * 2.55,
         )
 
+    @property
+    def rgb_color(self) -> tuple[int, int, int] | None:
+        state = self._device.state.__dict__[self.key][self.index]
+        if hasattr(state, "r"):
+            return (state.r, state.g, state.b)
+        return None
+
+    @property
+    def color_mode(self) -> ColorMode | str | None:
+        state = self._device.state.__dict__[self.key][self.index]
+        if hasattr(state, "r"):
+            return ColorMode.RGB
+        return super().color_mode
+
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Light to turn off."""
         if not self._device:
@@ -237,10 +251,11 @@ class InelsLight(InelsBaseEntity, LightEntity):
         if not self._device:
             return
 
+        ha_val = self._device.get_value().ha_value
+
         if ATTR_RGB_COLOR in kwargs:
             rgb = kwargs[ATTR_RGB_COLOR]
 
-            ha_val = self._device.get_value().ha_value
             ha_val.__dict__[self.key][self.index].r = rgb[0]
             ha_val.__dict__[self.key][self.index].g = rgb[1]
             ha_val.__dict__[self.key][self.index].b = rgb[2]
@@ -249,11 +264,8 @@ class InelsLight(InelsBaseEntity, LightEntity):
             brightness = int(kwargs[ATTR_BRIGHTNESS] / 2.55)
             brightness = min(brightness, 100)
 
-            ha_val = self._device.get_value().ha_value
             ha_val.__dict__[self.key][self.index].brightness = brightness
         else:
-            ha_val = self._device.get_value().ha_value
-
             last_val = self._device.last_values.ha_value
 
             # uses previously observed value if it isn't 0

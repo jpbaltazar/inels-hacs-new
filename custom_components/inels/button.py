@@ -96,7 +96,7 @@ INELS_BUTTON_INTERFACE: dict[str, list[InelsButtonType]] = {
     WSB3_20: [InelsButtonType(name=ROWS_2[int(i)]) for i in range(2)],
     WSB3_20H: [InelsButtonType(name=ROWS_2[int(i)]) for i in range(2)],
     WSB3_40: [
-        InelsButtonType(name=f"{ROWS_2[i%2]} {COLUMNS_2[int(i/2)]}") for i in range(2)
+        InelsButtonType(name=f"{ROWS_2[i%2]} {COLUMNS_2[int(i/2)]}") for i in range(4)
     ],
     WSB3_40H: [
         InelsButtonType(name=f"{ROWS_2[i%2]} {COLUMNS_2[int(i/2)]}") for i in range(2)
@@ -108,10 +108,10 @@ INELS_BUTTON_INTERFACE: dict[str, list[InelsButtonType]] = {
     ],
     GDB3_10: [InelsButtonType(name=COLUMNS_3[i]) for i in range(3)],
     GSB3_40SX: [
-        InelsButtonType(name=f"{ROWS_2[i%2]} {COLUMNS_2[int(i/2)]}") for i in range(2)
+        InelsButtonType(name=f"{ROWS_2[i%2]} {COLUMNS_2[int(i/2)]}") for i in range(4)
     ],
     GSB3_60SX: [
-        InelsButtonType(name=f"{ROWS_2[i%2]} {COLUMNS_3[int(i/2)]}") for i in range(2)
+        InelsButtonType(name=f"{ROWS_2[i%2]} {COLUMNS_3[int(i/2)]}") for i in range(6)
     ],
     GSB3_20SX: [InelsButtonType(name=ROWS_2[i]) for i in range(2)],
     GBP3_60: [

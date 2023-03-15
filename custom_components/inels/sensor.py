@@ -112,6 +112,7 @@ INELS_SENSOR_TYPES: dict[str, InelsSensorType] = {
         name="Analog input",
         icon=ICON_FLASH,
         unit=UnitOfElectricPotential.VOLT,
+        indexed=True,
         device_class=SensorDeviceClass.VOLTAGE,
     ),
     "card_id": InelsSensorType(

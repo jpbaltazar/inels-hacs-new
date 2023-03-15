@@ -266,6 +266,5 @@ class InelsBinaryInputSensor(InelsBaseEntity, BinarySensorEntity):
     def is_on(self) -> bool | None:
         """Return true is sensor is on."""
         if self.index != -1:
-            LOGGER.info(self._device.values.ha_value.__dict__[self.key][self.index])
             return self._device.values.ha_value.__dict__[self.key][self.index] == 1
         return self._device.values.ha_value.__dict__[self.key] == 1
