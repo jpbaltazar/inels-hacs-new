@@ -25,7 +25,7 @@ class InelsBaseEntity(Entity):
         self._attr_name = self._device.title
 
         self._parent_id = self._device.parent_id
-        self._attr_unique_id = f"{self._parent_id}-{self._device_id}"
+        self._attr_unique_id = self._device_id  # f"{self._parent_id}-{self._device_id}"
 
         self._key = key
         self._index = index
