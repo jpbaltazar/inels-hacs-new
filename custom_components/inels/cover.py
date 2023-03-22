@@ -189,3 +189,4 @@ class InelsCover(InelsBaseEntity, CoverEntity):
             Shutter_state.Stop_up if self.is_closed else Shutter_state.Stop_down
         )
         await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
+

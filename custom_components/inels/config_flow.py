@@ -1,4 +1,4 @@
-"""Config flow for iNels."""
+"""Config flow for iNELS."""
 from __future__ import annotations
 
 from collections import OrderedDict
@@ -17,7 +17,7 @@ from homeassistant.const import (
     CONF_PORT,
     CONF_USERNAME,
 )
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import DOMAIN, TITLE
@@ -30,7 +30,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    _hassio_discovery = None
+    _hassio_discovery: dict[str, Any] | None = None
 
     @staticmethod
     @callback
@@ -53,7 +53,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Configure the setup."""
-        errors = {}
+        errors: dict[str, str] = {}
 
         if user_input is not None:
             test_connect = await self.hass.async_add_executor_job(
@@ -66,7 +66,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input.get(MQTT_TRANSPORT),
             )
 
-            if test_connect:
+            if test_connect is None:
                 user_input[CONF_DISCOVERY] = True
                 return self.async_create_entry(
                     title=TITLE,
@@ -80,7 +80,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     },
                 )
 
-            errors["base"] = "cannot_connect"
+            errors["base"] = connect_val_to_error(test_connect)
         else:
             user_input = {}
 
@@ -130,7 +130,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 data.get(MQTT_TRANSPORT),
             )
 
-            if test_connect:
+            if test_connect is None:
                 return self.async_create_entry(
                     title=TITLE,
                     data={
@@ -143,7 +143,7 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     },
                 )
 
-            errors["base"] = "cannot_connect"
+            errors["base"] = connect_val_to_error(test_connect)
 
         return self.async_show_form(
             step_id="confirm",
@@ -183,7 +183,7 @@ class InelsOptionsFlowHandler(config_entries.OptionsFlow):
                 user_input.get(MQTT_TRANSPORT),
             )
 
-            if test_connect:
+            if test_connect is None:
                 self.broker_config.update(user_input)
                 self.hass.config_entries.async_update_entry(
                     self.config_entry, data=self.broker_config
@@ -200,7 +200,7 @@ class InelsOptionsFlowHandler(config_entries.OptionsFlow):
                     },
                 )
 
-            errors["base"] = "cannot_connect"
+            errors["base"] = connect_val_to_error(test_connect)
 
         fields = OrderedDict()
         current_broker = current_config.get(CONF_HOST)
@@ -234,7 +234,14 @@ class InelsOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
 
-def try_connection(hass, host, port, username, password, transfer="tcp"):
+def try_connection(
+    hass: HomeAssistant,
+    host: str,
+    port: str,
+    username: str,
+    password: str,
+    transfer: str = "tcp",
+):
     """Test if we can connect to an MQTT broker."""
     entry_config = {
         CONF_HOST: host,
@@ -248,3 +255,19 @@ def try_connection(hass, host, port, username, password, transfer="tcp"):
     client.disconnect()
 
     return ret
+
+
+TEST_CONNECT_ERRORS: dict[int, str] = {
+    1: "mqtt_version",
+    2: "forbidden_id",  # should never happen
+    3: "cannot_connect",
+    4: "invalid_auth",
+    5: "unauthorized",
+}
+
+
+def connect_val_to_error(test_connect: int | None):
+    """Turn test_connect value into an error string."""
+    if test_connect in TEST_CONNECT_ERRORS:
+        return TEST_CONNECT_ERRORS[test_connect]
+    return "unknown"
