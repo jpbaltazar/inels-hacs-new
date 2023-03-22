@@ -1,7 +1,6 @@
 """Config flow for iNELS."""
 from __future__ import annotations
 
-from collections import OrderedDict
 from typing import Any
 
 from inelsmqtt import InelsMqtt
@@ -59,8 +58,8 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             test_connect = await self.hass.async_add_executor_job(
                 try_connection,
                 self.hass,
-                user_input[CONF_HOST],
-                user_input[CONF_PORT],
+                user_input.get(CONF_HOST),
+                user_input.get(CONF_PORT),
                 user_input.get(CONF_USERNAME),
                 user_input.get(CONF_PASSWORD),
                 user_input.get(MQTT_TRANSPORT),
@@ -71,8 +70,8 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(
                     title=TITLE,
                     data={
-                        CONF_HOST: user_input[CONF_HOST],
-                        CONF_PORT: user_input[CONF_PORT],
+                        CONF_HOST: user_input.get(CONF_HOST),
+                        CONF_PORT: user_input.get(CONF_PORT),
                         CONF_USERNAME: user_input.get(CONF_USERNAME),
                         CONF_PASSWORD: user_input.get(CONF_PASSWORD),
                         MQTT_TRANSPORT: user_input.get(MQTT_TRANSPORT),
@@ -84,24 +83,30 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         else:
             user_input = {}
 
-        fields = OrderedDict()
-        fields[vol.Required(CONF_HOST, default=user_input.get(CONF_HOST))] = str
-        fields[
-            vol.Required(
-                CONF_PORT,
-                default=1883
-                if user_input.get(CONF_PORT) is None
-                else user_input.get(CONF_PORT),
-            )
-        ] = vol.Coerce(int)
-        fields[vol.Optional(CONF_USERNAME, default=user_input.get(CONF_USERNAME))] = str
-        fields[vol.Optional(CONF_PASSWORD, default=user_input.get(CONF_PASSWORD))] = str
-        fields[vol.Required(MQTT_TRANSPORT, default="tcp")] = vol.In(
-            ["tcp", "websockets"]
-        )
-
         return self.async_show_form(
-            step_id="setup", data_schema=vol.Schema(fields), errors=errors
+            step_id="setup",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_HOST, default=user_input.get(CONF_HOST)): str,
+                    vol.Required(
+                        CONF_PORT,
+                        default=1883
+                        if user_input.get(CONF_PORT) is None
+                        else user_input.get(CONF_PORT),
+                    ): vol.Coerce(int),
+                    vol.Optional(
+                        CONF_USERNAME, default=user_input.get(CONF_USERNAME)
+                    ): str,
+                    vol.Optional(
+                        CONF_PASSWORD, default=user_input.get(CONF_PASSWORD)
+                    ): str,
+                    vol.Required(MQTT_TRANSPORT, default="tcp"): vol.In(
+                        ["tcp", "websockets"]
+                    ),
+                }
+            ),
+            errors=errors,
+            last_step=True,
         )
 
     async def async_step_hassio(self, discovery_info: HassioServiceInfo) -> FlowResult:
@@ -123,8 +128,8 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             test_connect = await self.hass.async_add_executor_job(
                 try_connection,
                 self.hass,
-                data[CONF_HOST],
-                data[CONF_PORT],
+                data.get(CONF_HOST),
+                data.get(CONF_PORT),
                 data.get(CONF_USERNAME),
                 data.get(CONF_PASSWORD),
                 data.get(MQTT_TRANSPORT),
@@ -134,8 +139,8 @@ class FlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(
                     title=TITLE,
                     data={
-                        CONF_HOST: data[CONF_HOST],
-                        CONF_PORT: data[CONF_PORT],
+                        CONF_HOST: data.get(CONF_HOST),
+                        CONF_PORT: data.get(CONF_PORT),
                         CONF_USERNAME: data.get(CONF_USERNAME),
                         CONF_PASSWORD: data.get(CONF_PASSWORD),
                         MQTT_TRANSPORT: data.get(MQTT_TRANSPORT),
@@ -176,8 +181,8 @@ class InelsOptionsFlowHandler(config_entries.OptionsFlow):
             test_connect = await self.hass.async_add_executor_job(
                 try_connection,
                 self.hass,
-                user_input[CONF_HOST],
-                user_input[CONF_PORT],
+                user_input.get(CONF_HOST),
+                user_input.get(CONF_PORT),
                 user_input.get(CONF_USERNAME),
                 user_input.get(CONF_PASSWORD),
                 user_input.get(MQTT_TRANSPORT),
@@ -191,8 +196,8 @@ class InelsOptionsFlowHandler(config_entries.OptionsFlow):
                 return self.async_create_entry(
                     title=TITLE,
                     data={
-                        CONF_HOST: user_input[CONF_HOST],
-                        CONF_PORT: user_input[CONF_PORT],
+                        CONF_HOST: user_input.get(CONF_HOST),
+                        CONF_PORT: user_input.get(CONF_PORT),
                         CONF_USERNAME: user_input.get(CONF_USERNAME),
                         CONF_PASSWORD: user_input.get(CONF_PASSWORD),
                         MQTT_TRANSPORT: user_input.get(MQTT_TRANSPORT),
@@ -202,33 +207,29 @@ class InelsOptionsFlowHandler(config_entries.OptionsFlow):
 
             errors["base"] = connect_val_to_error(test_connect)
 
-        fields = OrderedDict()
         current_broker = current_config.get(CONF_HOST)
         current_port = current_config.get(CONF_PORT)
         current_user = current_config.get(CONF_USERNAME)
         current_pass = current_config.get(CONF_PASSWORD)
         current_transport = current_config.get(MQTT_TRANSPORT)
-        fields[vol.Required(CONF_HOST, default=current_broker)] = str
-        fields[vol.Required(CONF_PORT, default=current_port)] = vol.Coerce(int)
-        fields[
-            vol.Optional(
-                CONF_USERNAME,
-                description={"suggested_value": current_user},
-            )
-        ] = str
-        fields[
-            vol.Optional(
-                CONF_PASSWORD,
-                description={"suggested_value": current_pass},
-            )
-        ] = str
-        fields[vol.Required(MQTT_TRANSPORT, default=current_transport)] = vol.In(
-            ["tcp", "websockets"]
-        )
 
         return self.async_show_form(
             step_id="setup",
-            data_schema=vol.Schema(fields),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_HOST, default=current_broker): str,
+                    vol.Required(CONF_PORT, default=current_port): vol.Coerce(int),
+                    vol.Optional(
+                        CONF_USERNAME, description={"suggested_value": current_user}
+                    ): str,
+                    vol.Optional(
+                        CONF_PASSWORD, description={"suggested_value": current_pass}
+                    ): str,
+                    vol.Required(MQTT_TRANSPORT, default=current_transport): vol.In(
+                        ["tcp", "websockets"]
+                    ),
+                }
+            ),
             errors=errors,
             last_step=True,
         )

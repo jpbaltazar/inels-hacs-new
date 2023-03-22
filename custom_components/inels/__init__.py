@@ -44,9 +44,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         BROKER_CONFIG: entry.data,
     }
 
-    if hass.data.get(DOMAIN) is None:
-        hass.data.setdefault(DOMAIN, {})[entry.entry_id] = inels_data
-
     mqtt: InelsMqtt = await hass.async_add_executor_job(
         InelsMqtt, inels_data[BROKER_CONFIG]
     )
@@ -55,8 +52,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
-    if await hass.async_add_executor_job(inels_data[BROKER].test_connection) is False:
+    if (
+        await hass.async_add_executor_job(inels_data[BROKER].test_connection)
+        is not None
+    ):
         return False
+
+    if hass.data.get(DOMAIN) is None:
+        hass.data.setdefault(DOMAIN, {})[entry.entry_id] = inels_data
 
     try:
         i_disc = InelsDiscovery(inels_data[BROKER])
