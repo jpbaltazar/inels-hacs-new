@@ -20,10 +20,8 @@ from .entity import InelsBaseEntity
 from .const import (
     DEVICES,
     DOMAIN,
-    ICON_BATTERY,
     ICON_BINARY_INPUT,
     ICON_CARD_PRESENT,
-    ICON_EYE,
     ICON_HEAT_WAVE,
     ICON_HOME_FLOOD,
     ICON_MOTION,
@@ -49,7 +47,6 @@ class InelsBinarySensorType:
 INELS_BINARY_SENSOR_TYPES: dict[str, InelsBinarySensorType] = {
     "low_battery": InelsBinarySensorType(
         name="Battery",
-        icon=ICON_BATTERY,
         device_class=BinarySensorDeviceClass.BATTERY,
     ),
     "prox": InelsBinarySensorType(
@@ -75,7 +72,6 @@ INELS_BINARY_SENSOR_TYPES: dict[str, InelsBinarySensorType] = {
     ),
     "detected": InelsBinarySensorType(
         name="Detector",
-        icon=ICON_EYE,
     ),
     "tamper": InelsBinarySensorType(
         name="Tamper",
@@ -83,12 +79,10 @@ INELS_BINARY_SENSOR_TYPES: dict[str, InelsBinarySensorType] = {
     ),
     "motion": InelsBinarySensorType(
         name="Motion detector",
-        icon=ICON_MOTION,
         device_class=BinarySensorDeviceClass.MOTION,
     ),
     "flooded": InelsBinarySensorType(
         name="Flooded",
-        icon=ICON_HOME_FLOOD,
         device_class=BinarySensorDeviceClass.MOISTURE,
     ),
     "card_present": InelsBinarySensorType(
