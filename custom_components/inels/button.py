@@ -210,8 +210,8 @@ class InelsButton(InelsBaseEntity, ButtonEntity):
         if description.name:
             self._attr_name = f"{self._attr_name} {description.name}"
 
-    def _callback(self, new_value: Any) -> None:
-        super()._callback(new_value)
+    def _callback(self) -> None:
+        super()._callback()
 
         curr_val = self._device.state
         last_val = self._device.last_values.ha_value

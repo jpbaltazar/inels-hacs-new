@@ -40,7 +40,7 @@ class InelsBaseEntity(Entity):
 
         self.async_on_remove(lambda: LOGGER.info("Entity %s to be removed", self.name))
 
-    def _callback(self, new_value: Any) -> None:
+    def _callback(self) -> None:
         """Get data from broker into the HA."""
         # self._device.update_value(new_value)
         self.schedule_update_ha_state()
