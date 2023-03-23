@@ -40,7 +40,7 @@ class InelsBinarySensorType:
     """Binary sensor type property description"""
 
     name: str
-    icon: str
+    icon: str = None
     is_binary_input: bool = False
     indexed: bool = False
     device_class: BinarySensorDeviceClass = None
@@ -76,6 +76,10 @@ INELS_BINARY_SENSOR_TYPES: dict[str, InelsBinarySensorType] = {
     "detected": InelsBinarySensorType(
         name="Detector",
         icon=ICON_EYE,
+    ),
+    "tamper": InelsBinarySensorType(
+        name="Tamper",
+        device_class=BinarySensorDeviceClass.TAMPER,
     ),
     "motion": InelsBinarySensorType(
         name="Motion detector",
