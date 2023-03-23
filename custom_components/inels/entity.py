@@ -42,7 +42,6 @@ class InelsBaseEntity(Entity):
 
     def _callback(self) -> None:
         """Get data from broker into the HA."""
-        # self._device.update_value(new_value)
         self.schedule_update_ha_state()
 
     @property

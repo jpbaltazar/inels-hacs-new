@@ -248,9 +248,9 @@ class InelsSensor(InelsBaseEntity, SensorEntity):
         self._attr_icon = self.entity_description.icon
         self._attr_native_value = val
 
-    def _callback(self, new_value: Any) -> None:
+    def _callback(self) -> None:
         """Refresh data."""
-        super()._callback(new_value)
+        super()._callback()
 
         if self.index != -1:  # with index
             val = self._device.state.__dict__[self.key][self.index]
