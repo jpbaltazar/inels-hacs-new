@@ -49,6 +49,8 @@ ICON_FAN_1 = "mdi:fan-speed-1"
 ICON_FAN_2 = "mdi:fan-speed-2"
 ICON_FAN_3 = "mdi:fan-speed-3"
 ICON_ECO = "mdi:leaf"
+ICON_UP = "mdi:chevron-up"
+ICON_DOWN = "mdi:chevron-down"
 
 ICON_WATER_HEATER_DICT = {
     "on": "mdi:valve-open",

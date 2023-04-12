@@ -2,7 +2,14 @@
     "config": {
         "abort": {
             "already_configured": "Service is already configured",
-            "single_instance_allowed": "Already configured. Only a single configuration possible."
+            "cannot_connect": "Failed to connect",
+            "forbidden_id": "Forbidden mqtt client id",
+            "invalid_auth": "Invalid authentication details",
+            "mqtt_version": "Incorrect broker MQTT version",
+            "no_devices_found": "No devices were found.",
+            "single_instance_allowed": "Already configured. Only a single configuration possible.",
+            "unauthorized": "Unauthorized connection",
+            "unknown": "Unknown error"
         },
         "error": {
             "cannot_connect": "Failed to connect"
@@ -30,7 +37,14 @@
     },
     "options": {
         "error": {
-            "cannot_connect": "Failed to connect"
+            "cannot_connect": "Failed to connect",
+            "forbidden_id": "Forbidden mqtt client id",
+            "invalid_auth": "Invalid authentication details",
+            "mqtt_version": "Incorrect broker MQTT version",
+            "no_devices_found": "No devices were found.",
+            "single_instance_allowed": "Already configured. Only a single configuration possible.",
+            "unauthorized": "Unauthorized connection",
+            "unknown": "Unknown error"
         },
         "step": {
             "setup": {

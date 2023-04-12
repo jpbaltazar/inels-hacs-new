@@ -40,6 +40,10 @@ class InelsShutterType:
 
 # SHUTTERS PLATFORM
 INELS_SHUTTERS_TYPES: dict[str, InelsShutterType] = {
+    "simple_shutters": InelsShutterType(  # no is_closed status
+        "Shutter",
+        CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP,
+    ),
     "shutters": InelsShutterType(
         "Shutter",
         CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP,
@@ -147,11 +151,12 @@ class InelsCover(InelsBaseEntity, CoverEntity):
     @property
     def is_closed(self) -> bool | None:
         """Cover is closed."""
-        is_closed = (
-            self._device.state.__dict__[self.key][self.index].state
-            == Shutter_state.Closed
-        )
-        return is_closed
+        # is_closed = (
+        #     self._device.state.__dict__[self.key][self.index].state
+        #     == Shutter_state.Closed
+        # )
+        # return is_closed
+        return self._device.state.__dict__[self.key][self.index].is_closed
 
     @property
     def current_cover_position(self) -> int | None:
@@ -189,4 +194,3 @@ class InelsCover(InelsBaseEntity, CoverEntity):
             Shutter_state.Stop_up if self.is_closed else Shutter_state.Stop_down
         )
         await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
-

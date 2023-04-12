@@ -1,8 +1,6 @@
 """Base class for iNELS components."""
 from __future__ import annotations
 
-from typing import Any
-
 from inelsmqtt.devices import Device
 
 from homeassistant.helpers.entity import DeviceInfo, Entity

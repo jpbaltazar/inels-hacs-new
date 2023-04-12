@@ -21,6 +21,7 @@ from inelsmqtt.const import (
     GSB3_20SX,
     GBP3_60,
     IDRT3_1,
+    JA3_018M,
 )
 
 from homeassistant.components.button import (
@@ -48,6 +49,8 @@ from .const import (
     ICON_MINUS,
     ICON_PLUS,
     ICON_CYCLE,
+    ICON_UP,
+    ICON_DOWN,
     OLD_ENTITIES,
 )
 
@@ -68,7 +71,7 @@ INELS_BUTTON_TYPES: dict[str, InelsButtonType] = {
     "sw": InelsButtonType(name="Switch"),
     "plus": InelsButtonType(name="Plus", icon=ICON_PLUS),
     "minus": InelsButtonType(name="Minus", icon=ICON_MINUS),
-    "interface": InelsButtonType(name="Inteface"),  # special case
+    "interface": InelsButtonType(name="Interface"),  # special backup case
 }
 
 
@@ -79,6 +82,7 @@ ROWS_3 = ["Top", "Middle", "Bottom"]
 COLUMNS_3 = ["Left", "Center", "Right"]
 ROWS_2 = ["Top", "Bottom"]
 COLUMNS_2 = ["Left", "Right"]
+UP_DOWN = ["Up", "Down"]
 
 INELS_BUTTON_INTERFACE: dict[str, list[InelsButtonType]] = {
     GRT3_50: [
@@ -117,7 +121,17 @@ INELS_BUTTON_INTERFACE: dict[str, list[InelsButtonType]] = {
     GBP3_60: [
         InelsButtonType(name=f"{ROWS_2[i%2]} {COLUMNS_3[int(i/2)]}") for i in range(6)
     ],
-    IDRT3_1: [InelsButtonType(name="Down"), InelsButtonType(name="Up")],
+    IDRT3_1: [
+        InelsButtonType(name="Down", icon=ICON_DOWN),
+        InelsButtonType(name="Up", icon=ICON_UP),
+    ],
+    JA3_018M: [
+        InelsButtonType(
+            name=f"Switch {UP_DOWN[i%2]} {int(i/2) + 1}",
+            icon=ICON_UP if i % 2 == 0 else ICON_DOWN,
+        )
+        for i in range(18)
+    ],
 }
 
 
@@ -209,6 +223,11 @@ class InelsButton(InelsBaseEntity, ButtonEntity):
         self.entity_id = f"{Platform.BUTTON}.{self._attr_unique_id}"
         if description.name:
             self._attr_name = f"{self._attr_name} {description.name}"
+
+    @property
+    def available(self) -> bool:
+        # since the buttons only work within HA, they can always be available
+        return True
 
     def _callback(self) -> None:
         super()._callback()

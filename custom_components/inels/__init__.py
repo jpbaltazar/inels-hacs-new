@@ -52,9 +52,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
-    if (
-        await hass.async_add_executor_job(inels_data[BROKER].test_connection)
-        is not None
+    if isinstance(  # None -> no error, int -> error code
+        await hass.async_add_executor_job(inels_data[BROKER].test_connection), int
     ):
         return False
 
