@@ -89,6 +89,8 @@ Platform | Description
 - TI3-60M (159)
 - IDRT3-1 (160)
 - JA3-018M (163)
+- DALI-DMX-Unit (164)
+- DALI-DMX-Unit-02 (165)
 - Virtual heating regulator (167)
 - Virtual cooling regulator (168)
 
