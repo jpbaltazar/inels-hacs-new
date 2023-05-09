@@ -7,6 +7,7 @@ from inelsmqtt.devices import Device
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
+    ATTR_COLOR_TEMP_KELVIN,
     ATTR_RGB_COLOR,
     ATTR_TRANSITION,
     ColorMode,
@@ -44,7 +45,7 @@ thermal_alert = InelsLightAlert(
 )
 
 current_alert = InelsLightAlert(
-    key="toa", message="Current overload on light %s of device %d"
+    key="coa", message="Current overload on light %s of device %d"
 )
 
 dali_comm = InelsLightAlert(
@@ -89,6 +90,10 @@ INELS_LIGHT_TYPES: dict[str, InelsLightType] = {
     ),
     "rgb": InelsLightType(
         name="RGB light", color_modes=[ColorMode.BRIGHTNESS, ColorMode.RGB]
+    ),
+    "warm_light": InelsLightType(
+        name="Tunable white light",
+        color_modes=[ColorMode.BRIGHTNESS, ColorMode.COLOR_TEMP],
     ),
 }
 
@@ -183,6 +188,12 @@ class InelsLight(InelsBaseEntity, LightEntity):
 
         self._attr_supported_color_modes: set[ColorMode] = set()
         self._attr_supported_color_modes |= set(description.color_modes)
+        self._attr_min_color_temp_kelvin = (
+            2700  # standard color temp, does not represent actual bulb
+        )
+        self._attr_max_color_temp_kelvin = (
+            6500  # standard color temp, does not represent actual bulb
+        )
 
     @property
     def available(self) -> bool:
@@ -225,10 +236,23 @@ class InelsLight(InelsBaseEntity, LightEntity):
         return None
 
     @property
+    def color_temp_kelvin(self) -> int | None:
+        state = self._device.state.__dict__[self.key][self.index]
+        if hasattr(state, "relative_ct"):
+            return int(
+                (state.relative_ct / 100)
+                * (self.max_color_temp_kelvin - self.min_color_temp_kelvin)
+                + self.min_color_temp_kelvin
+            )
+        return None
+
+    @property
     def color_mode(self) -> ColorMode | str | None:
         state = self._device.state.__dict__[self.key][self.index]
         if hasattr(state, "r"):
             return ColorMode.RGB
+        if hasattr(state, "relative_ct"):
+            return ColorMode.COLOR_TEMP
         return super().color_mode
 
     async def async_turn_off(self, **kwargs: Any) -> None:
@@ -259,16 +283,23 @@ class InelsLight(InelsBaseEntity, LightEntity):
             ha_val.__dict__[self.key][self.index].r = rgb[0]
             ha_val.__dict__[self.key][self.index].g = rgb[1]
             ha_val.__dict__[self.key][self.index].b = rgb[2]
-
-        if ATTR_BRIGHTNESS in kwargs:
+        elif ATTR_BRIGHTNESS in kwargs:
             brightness = int(kwargs[ATTR_BRIGHTNESS] / 2.55)
             brightness = min(brightness, 100)
 
             ha_val.__dict__[self.key][self.index].brightness = brightness
+        elif ATTR_COLOR_TEMP_KELVIN in kwargs:
+            color_temp = int(kwargs[ATTR_COLOR_TEMP_KELVIN])
+
+            ha_val.__dict__[self.key][self.index].relative_ct = int(  # 0-100%
+                100
+                * (color_temp - self.min_color_temp_kelvin)
+                / (self.max_color_temp_kelvin - self.min_color_temp_kelvin)
+            )
         else:
             last_val = self._device.last_values.ha_value
 
-            # uses previously observed value if it isn't 0
+            # uses previously observed brightness value if it isn't 0
             ha_val.__dict__[self.key][self.index].brightness = (
                 100
                 if last_val.__dict__[self.key][self.index].brightness == 0
