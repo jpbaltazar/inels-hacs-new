@@ -188,6 +188,18 @@ class InelsClimate(InelsBaseEntity, ClimateEntity):
             return self._device.state.__dict__[self.key].required
 
     @property
+    def target_temperature_high(self) -> float | None:
+        #if self.
+        # virt controller on two temp mode
+        return self._device.state.__dict__[self.key].required
+
+    @property
+    def target_temperature_low(self) -> float | None:
+        return self._device.state.__dict__[self.key].required_cool
+
+
+
+    @property
     def hvac_modes(self) -> list[HVACMode] | list[str]:
         val = self._device.state.__dict__[self.key]
         if hasattr(val, "control_mode"):  # virtual controller
@@ -213,12 +225,15 @@ class InelsClimate(InelsBaseEntity, ClimateEntity):
     def preset_mode(self) -> str | None:
         val = self._device.state.__dict__[self.key]
 
-        if hasattr(val, "current_preset"):
+        if hasattr(val, "current_preset") and val.control_mode == 0: # user controlled
             return self.preset_modes[val.current_preset]
         return None
 
     @property
     def preset_modes(self) -> list[str] | None:
+        val = self._device.state.__dict__[self.key]
+        if hasattr(val, "current_preset") and val.control_mode == 0: # user controlled
+            return None
         return self.entity_description.presets
 
     async def async_set_temperature(self, **kwargs) -> None:
