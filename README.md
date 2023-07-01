@@ -91,6 +91,7 @@ Platform | Description
 - JA3-018M (163)
 - DALI-DMX-Unit (164)
 - DALI-DMX-Unit-02 (165)
+- Virtual controller (166)
 - Virtual heating regulator (167)
 - Virtual cooling regulator (168)
 

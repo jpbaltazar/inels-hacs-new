@@ -15,6 +15,7 @@ from homeassistant.components.climate import (
     HVACMode,
     HVACAction,
 )
+from homeassistant.components.climate.const import ClimateEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, Platform, UnitOfTemperature
 from homeassistant.core import HomeAssistant
@@ -34,8 +35,6 @@ OPERATION_LIST = [
     STATE_OFF,
     STATE_ON,
 ]
-
-SUPPORT_FLAGS_CLIMATE = ClimateEntityFeature.TARGET_TEMPERATURE
 
 CLIMATE_MODE_TO_HVAC_MODE = {
     Climate_modes.Off: HVACMode.OFF,
@@ -67,7 +66,7 @@ class InelsClimateType:
     """Climate type property description"""
 
     name: str
-    features: ClimateEntityFeature
+    features: list[ClimateEntityFeature]
     hvac_modes: list[HVACMode]
     presets: list[str] | None = None
 
@@ -75,13 +74,16 @@ class InelsClimateType:
 INELS_CLIMATE_TYPES: dict[str, InelsClimateType] = {
     "thermovalve": InelsClimateType(
         name="Thermovalve",
-        features=ClimateEntityFeature.TARGET_TEMPERATURE,
+        features= [ClimateEntityFeature.TARGET_TEMPERATURE],
         hvac_modes=[HVACMode.OFF, HVACMode.HEAT],
     ),
     "climate_controller": InelsClimateType(
         name="Virtual Thermostat",
-        features=ClimateEntityFeature.TARGET_TEMPERATURE
-        | ClimateEntityFeature.PRESET_MODE,
+        features=[
+            ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE,
+            ClimateEntityFeature.TARGET_TEMPERATURE_RANGE,
+            ClimateEntityFeature.TARGET_TEMPERATURE,
+        ],
         hvac_modes=[
             HVACMode.OFF,
             HVACMode.HEAT,
@@ -146,14 +148,13 @@ class InelsClimateDescription(ClimateEntityDescription):
 
     name: str = "Climate"
     hvac_modes: list[HVACMode] | None = None
-    features: ClimateEntityFeature = ClimateEntityFeature.TARGET_TEMPERATURE
+    features: list[ClimateEntityFeature] | None = None
     presets: list[str] | None = None
 
 
 class InelsClimate(InelsBaseEntity, ClimateEntity):
     """Inels Climate entity for HA."""
 
-    _attr_supported_features: ClimateEntityFeature = SUPPORT_FLAGS_CLIMATE
     _attr_temperature_unit: str = UnitOfTemperature.CELSIUS
 
     entity_description: InelsClimateDescription
@@ -172,7 +173,7 @@ class InelsClimate(InelsBaseEntity, ClimateEntity):
         self._attr_unique_id = slugify(f"{self._attr_unique_id}_{description.key}")
         self.entity_id = f"{Platform.CLIMATE}.{self._attr_unique_id}"
         self._attr_name = f"{self._attr_name} {description.name}"
-        self._attr_supported_features = description.features
+        #self._attr_supported_features = description.features
 
     @property
     def current_temperature(self) -> float | None:
@@ -180,8 +181,19 @@ class InelsClimate(InelsBaseEntity, ClimateEntity):
         return self._device.state.__dict__[self.key].current
 
     @property
+    def supported_features(self) -> ClimateEntityFeature:
+        if len(self.entity_description.features) == 0:
+            return self.entity_description.features
+        else:
+            return self.entity_description.features[
+                self._device.state.__dict__[self.key].control_mode
+            ]
+
+    @property
     def target_temperature(self) -> float | None:
         """Get target temperature."""
+        val = self._device.state.__dict__[self.key]
+
         if self.hvac_mode == HVACMode.COOL:
             return self._device.state.__dict__[self.key].required_cool
         else:
@@ -189,15 +201,13 @@ class InelsClimate(InelsBaseEntity, ClimateEntity):
 
     @property
     def target_temperature_high(self) -> float | None:
-        #if self.
+        # if self.
         # virt controller on two temp mode
         return self._device.state.__dict__[self.key].required
 
     @property
     def target_temperature_low(self) -> float | None:
         return self._device.state.__dict__[self.key].required_cool
-
-
 
     @property
     def hvac_modes(self) -> list[HVACMode] | list[str]:
@@ -225,33 +235,67 @@ class InelsClimate(InelsBaseEntity, ClimateEntity):
     def preset_mode(self) -> str | None:
         val = self._device.state.__dict__[self.key]
 
-        if hasattr(val, "current_preset") and val.control_mode == 0: # user controlled
+        if hasattr(val, "current_preset") and val.control_mode == 0:  # user controlled
             return self.preset_modes[val.current_preset]
         return None
 
     @property
     def preset_modes(self) -> list[str] | None:
         val = self._device.state.__dict__[self.key]
-        if hasattr(val, "current_preset") and val.control_mode == 0: # user controlled
-            return None
-        return self.entity_description.presets
+
+        if hasattr(val, "current_preset") and val.control_mode == 0:  # user controlled
+            return self.entity_description.presets
+        return None
 
     async def async_set_temperature(self, **kwargs) -> None:
         """Set the required temperature."""
         ha_val = self._device.state
-        if ATTR_TEMPERATURE in kwargs:
-            if self.hvac_mode == HVACMode.COOL:
-                ha_val.__dict__[self.key].required_cool = kwargs.get(ATTR_TEMPERATURE)
-            else:
-                ha_val.__dict__[self.key].required = kwargs.get(ATTR_TEMPERATURE)
+        if hasattr(ha_val.__dict__[self.key], "control_mode"):
+            if ha_val.__dict__[self.key].control_mode != 0:
+                return None
 
-        if hasattr(ha_val.__dict__[self.key], "current_preset"):
-            ha_val.__dict__[self.key].current_preset = 5  # manual mode
+            if ATTR_TEMPERATURE in kwargs:
+                if self.hvac_mode == HVACMode.COOL:
+                    ha_val.__dict__[self.key].required_cool = kwargs.get(
+                        ATTR_TEMPERATURE
+                    )
+                else:
+                    ha_val.__dict__[self.key].required = kwargs.get(ATTR_TEMPERATURE)
+
+            if hasattr(ha_val.__dict__[self.key], "current_preset"):
+                ha_val.__dict__[self.key].current_preset = 5  # manual mode
+        else:
+            if ATTR_TEMPERATURE in kwargs:
+                if self.hvac_mode == HVACMode.COOL:
+                    ha_val.__dict__[self.key].required_cool = kwargs.get(
+                        ATTR_TEMPERATURE
+                    )
+                else:
+                    ha_val.__dict__[self.key].required = kwargs.get(ATTR_TEMPERATURE)
 
         await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
-        if self.key == "thermovalve":  # exception as it is always on
+        ha_val = self._device.state
+
+        if hasattr(ha_val.__dict__[self.key], "control_mode"):
+            ha_val.__dict__[self.key].climate_mode = HVAC_MODE_TO_CLIMATE_MODE[
+                hvac_mode
+            ]
+
+            last_val = self._device.last_values.ha_value
+            if (
+                hvac_mode != HVACMode.OFF
+                and hasattr(ha_val.__dict__[self.key], "current_preset")
+                and ha_val.__dict__[self.key].current_preset == 0
+            ):
+                ha_val.__dict__[self.key].required = last_val.__dict__[
+                    self.key
+                ].required
+                ha_val.__dict__[self.key].required_cool = last_val.__dict__[
+                    self.key
+                ].required_cool
+        else:
             ha_val = self._device.state
             if hvac_mode == HVACMode.OFF:
                 ha_val.__dict__[self.key].required = 0
@@ -259,11 +303,6 @@ class InelsClimate(InelsBaseEntity, ClimateEntity):
                 ha_val.__dict__[self.key].required = (
                     ha_val.__dict__[self.key].current + 2
                 )
-        else:
-            ha_val = self._device.state
-            ha_val.__dict__[self.key].climate_mode = HVAC_MODE_TO_CLIMATE_MODE[
-                hvac_mode
-            ]
 
         return await self.hass.async_add_executor_job(self._device.set_ha_value, ha_val)
 
